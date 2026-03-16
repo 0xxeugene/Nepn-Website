@@ -328,8 +328,8 @@ export default function Hero() {
             {/* Heading — per-character reveal */}
             <h1
               style={{
-                fontSize: "clamp(36px, 5vw, 82px)",
-                fontWeight: "800",
+                fontSize: "clamp(36px, 5vw, 64px)",
+                fontWeight: "600",
                 color: "#fff",
                 lineHeight: 1.0,
                 letterSpacing: "-0.03em",

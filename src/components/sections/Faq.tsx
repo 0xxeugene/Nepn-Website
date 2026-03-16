@@ -72,7 +72,7 @@ export default function FAQ() {
         >
           <h2
             style={{
-              fontSize: "clamp(28px, 3.5vw, 52px)",
+              fontSize: "clamp(28px, 3.5vw, 64px)",
               fontWeight: "500",
               color: "#ffffff",
               lineHeight: 1.1,

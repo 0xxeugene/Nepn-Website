@@ -91,9 +91,12 @@ export default function Header() {
           }}
         >
           {/* Logo */}
+
           <Link href="/" onClick={closeMenu}>
             <Image
-              src="/images/logo_text_white.png"
+              src={
+                scrolled ? "/images/logo.png" : "/images/logo_text_white.png"
+              }
               alt="NEPN Logo"
               width={120}
               height={40}
@@ -102,7 +105,7 @@ export default function Header() {
                 width: "auto",
                 filter: scrolled
                   ? "none"
-                  : "drop-shadow(0 1px 6px rgba(0,0,0,0.5)) ",
+                  : "drop-shadow(0 1px 6px rgba(0,0,0,0.5))",
                 transition: "filter 0.4s ease",
               }}
               priority

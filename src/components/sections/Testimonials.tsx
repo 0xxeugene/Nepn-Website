@@ -84,8 +84,8 @@ export default function Testimonials() {
         >
           <h2
             style={{
-              fontSize: "clamp(28px, 4vw, 52px)",
-              fontWeight: "500",
+              fontSize: "clamp(28px, 4vw, 64px)",
+              fontWeight: "600",
               color: "#0a0a0f",
               letterSpacing: "-0.03em",
               lineHeight: 1.1,

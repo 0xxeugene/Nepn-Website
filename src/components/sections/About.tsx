@@ -234,8 +234,8 @@ export default function AboutSection() {
           {/* Heading — character split */}
           <h2
             style={{
-              fontSize: "clamp(28px, 4vw, 60px)",
-              fontWeight: "800",
+              fontSize: "clamp(28px, 4vw, 64px)",
+              fontWeight: "600",
               color: "#0a0a0f",
               lineHeight: 1.05,
               letterSpacing: "-0.03em",

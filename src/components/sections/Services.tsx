@@ -200,7 +200,7 @@ export default function Sustainability() {
           >
             <h2
               style={{
-                fontSize: "clamp(28px, 4vw, 60px)",
+                fontSize: "clamp(28px, 4vw, 64px)",
                 fontWeight: "500",
                 color: "#fff",
                 letterSpacing: "-0.03em",
