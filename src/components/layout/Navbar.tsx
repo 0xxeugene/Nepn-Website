@@ -93,7 +93,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" onClick={closeMenu}>
             <Image
-              src="/images/logo.png"
+              src="/images/logo_text_white.png"
               alt="NEPN Logo"
               width={120}
               height={40}

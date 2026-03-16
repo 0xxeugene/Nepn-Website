@@ -1,9 +1,125 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
 import { useRef } from "react";
+
+// Split text character by character
+function SplitText({
+  text,
+  delay = 0,
+  style = {},
+}: {
+  text: string;
+  delay?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <>
+      {text.split("").map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 50, rotateX: -40 }}
+          whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{
+            duration: 0.55,
+            delay: delay + i * 0.022,
+            ease: [0.21, 0.47, 0.32, 0.98],
+          }}
+          style={{
+            display: "inline-block",
+            transformOrigin: "bottom",
+            ...style,
+          }}
+        >
+          {char === " " ? "\u00A0" : char}
+        </motion.span>
+      ))}
+    </>
+  );
+}
+
+// Magnetic CTA button
+function MagneticLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLAnchorElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 20 });
+  const springY = useSpring(y, { stiffness: 300, damping: 20 });
+
+  return (
+    <motion.a
+      ref={ref}
+      href={href}
+      onMouseMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        x.set((e.clientX - (rect.left + rect.width / 2)) * 0.35);
+        y.set((e.clientY - (rect.top + rect.height / 2)) * 0.35);
+      }}
+      onMouseLeave={() => {
+        x.set(0);
+        y.set(0);
+      }}
+      style={{
+        x: springX,
+        y: springY,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        backgroundColor: "#0000FE",
+        color: "#fff",
+        fontSize: "14px",
+        fontWeight: "600",
+        textDecoration: "none",
+        padding: "13px 26px",
+        borderRadius: "999px",
+        position: "relative",
+        overflow: "hidden",
+        cursor: "pointer",
+      }}
+      whileHover={{ scale: 1.06 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <motion.span
+        initial={{ x: "-100%" }}
+        whileHover={{ x: "200%" }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%)",
+        }}
+      />
+      {children}
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path
+          d="M5 3l6 5-6 5"
+          stroke="#fff"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </motion.a>
+  );
+}
 
 export default function AboutSection() {
   const sectionRef = useRef(null);
@@ -13,12 +129,6 @@ export default function AboutSection() {
     offset: ["start end", "end start"],
   });
 
-  // const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.5, 1.25, 0.6]);
-  // const opacity = useTransform(
-  //   scrollYProgress,
-  //   [0, 0.15, 0.85, 1],
-  //   [0, 1, 1, 0],
-  // );
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.4, 1.3, 0.5]);
   const opacity = useTransform(
     scrollYProgress,
@@ -27,17 +137,34 @@ export default function AboutSection() {
   );
   const x = useTransform(scrollYProgress, [0, 0.45, 1], [200, 0, 80]);
 
+  // Parallax on the image
+  const imageY = useTransform(scrollYProgress, [0, 1], [60, -60]);
+
   return (
     <section
       ref={sectionRef}
       className="about-section"
       style={{
         backgroundColor: "#fff",
-        padding: "100px 0",
+        padding: "120px 0",
         position: "relative",
         overflow: "hidden",
       }}
     >
+      {/* Grain texture */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          opacity: 0.025,
+          pointerEvents: "none",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+          backgroundSize: "128px",
+          mixBlendMode: "multiply",
+        }}
+      />
+
       {/* Decorative shape */}
       <motion.div
         className="about-deco"
@@ -77,133 +204,231 @@ export default function AboutSection() {
           zIndex: 1,
         }}
       >
-        {/* Left — Text */}
-        {/* Left — Text */}
-        <motion.div
-          initial={{ opacity: 0, y: 60, filter: "blur(8px)" }}
-          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.9, ease: [0.21, 0.47, 0.32, 0.98] }}
-          className="about-text"
-          style={{ flex: "1.1", minWidth: 0 }}
-        >
-          <p
-            style={{
-              fontSize: "20px",
-              fontWeight: "500",
-              color: "#000000A8",
-              marginBottom: "12px",
-              letterSpacing: "0.01em",
-            }}
-          >
-            Who we are
-          </p>
-
-          <h2
-            style={{
-              fontSize: "clamp(28px, 4vw, 60px)",
-              fontWeight: "500",
-              color: "#0a0a0f",
-              lineHeight: 1.1,
-              letterSpacing: "-0.03em",
-              marginBottom: "24px",
-            }}
-          >
-            History, Mission
-            <br />& Values
-          </h2>
-
-          <p
-            style={{
-              fontSize: "16px",
-              color: "#666",
-              lineHeight: 2.5,
-              marginBottom: "36px",
-              maxWidth: "460px",
-            }}
-          >
-            Welcome to Network E&P Nigeria Limited (NEPN), a fully
-            Nigerian-owned oil and gas company dedicated to promoting
-            sustainable energy solutions throughout Nigeria. Since our
-            establishment, we have been at the forefront of exploring and
-            developing the Qua Iboe field, playing a vital role in meeting the
-            nation&apos;s energy needs.....
-          </p>
-
-          <Link
-            href="/about"
+        {/* ── Left: Text ── */}
+        <div className="about-text" style={{ flex: "1.1", minWidth: 0 }}>
+          {/* Eyebrow */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              backgroundColor: "#0000FE",
-              color: "#fff",
-              fontSize: "14px",
-              fontWeight: "600",
-              textDecoration: "none",
-              padding: "12px 24px",
-              borderRadius: "999px",
-              transition: "opacity 0.15s ease, transform 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.opacity = "0.88";
-              (e.currentTarget as HTMLAnchorElement).style.transform =
-                "translateY(-2px)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.opacity = "1";
-              (e.currentTarget as HTMLAnchorElement).style.transform =
-                "translateY(0)";
+              marginBottom: "20px",
             }}
           >
-            Explore our capabilities
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M5 3l6 5-6 5"
-                stroke="#fff"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-        </motion.div>
+            <span
+              style={{
+                fontSize: "11px",
+                fontWeight: "600",
+                color: "rgba(0,0,0,0.45)",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+              }}
+            >
+              Who we are
+            </span>
+          </motion.div>
+          {/* Heading — character split */}
+          <h2
+            style={{
+              fontSize: "clamp(28px, 4vw, 60px)",
+              fontWeight: "800",
+              color: "#0a0a0f",
+              lineHeight: 1.05,
+              letterSpacing: "-0.03em",
+              margin: "0 0 28px",
+              perspectiveOrigin: "50% 50%",
+              transformStyle: "preserve-3d",
+            }}
+          >
+            {["History, Mission", "& Values"].map((line, li) => (
+              <div
+                key={li}
+                style={{
+                  display: "block",
+                  overflow: "hidden",
+                  lineHeight: 1.15,
+                }}
+              >
+                <SplitText text={line} delay={li * 0.1} />
+              </div>
+            ))}
+          </h2>
 
-        {/* Right — Image */}
+          <motion.p
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.7, delay: 0.35, ease: "easeOut" }}
+            style={{
+              fontSize: "15px",
+              color: "#555",
+              lineHeight: 2.2,
+              marginBottom: "40px",
+              maxWidth: "460px",
+            }}
+          >
+            Welcome to Network E&amp;P Nigeria Limited (NEPN), a fully
+            Nigerian-owned oil and gas company dedicated to promoting
+            sustainable energy solutions throughout Nigeria. Since our
+            establishment, we have been at the forefront of exploring and
+            developing the Qua Iboe field, playing a vital role in meeting the
+            nation&apos;s energy needs.
+          </motion.p>
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+          >
+            <MagneticLink href="/about">Explore our capabilities</MagneticLink>
+          </motion.div>
+        </div>
+
+        {/* ── Right: Image ── */}
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, margin: "-90px" }}
-          transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+          initial={{ opacity: 0, x: 60, filter: "blur(12px)" }}
+          whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{
+            duration: 1,
+            ease: [0.21, 0.47, 0.32, 0.98],
+            delay: 0.2,
+          }}
           className="about-image"
           style={{
-            flex: "0 0 36%",
+            flex: "0 0 48%",
             minWidth: 0,
             position: "relative",
             zIndex: 2,
-            marginRight: "-48px",
           }}
         >
+          {/* Floating accent blob behind image */}
+          <motion.div
+            animate={{ y: [0, -12, 0], rotate: [0, 3, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              position: "absolute",
+              top: "8%",
+              right: "-5%",
+              width: "55%",
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(0,0,254,0.12) 0%, transparent 70%)",
+              zIndex: 0,
+              pointerEvents: "none",
+              filter: "blur(24px)",
+            }}
+          />
+
           <motion.div
             whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
             style={{
               position: "relative",
-              width: "92%",
+              width: "100%",
               aspectRatio: "3/4",
-              borderRadius: "16px",
+              borderRadius: "20px",
               overflow: "hidden",
-              boxShadow: "0 24px 60px rgba(0,0,0,0.12)",
+              boxShadow:
+                "0 32px 80px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,254,0.08)",
               border: "6px solid #fff",
               marginLeft: "auto",
+              zIndex: 1,
             }}
           >
-            <Image
-              src="/images/nepn-image-three.jpg"
-              alt="NEPN Operations"
-              fill
-              style={{ objectFit: "cover" }}
+            {/* Parallax inner image */}
+            <motion.div
+              style={{
+                y: imageY,
+                position: "absolute",
+                inset: "-10% 0",
+                height: "120%",
+              }}
+            >
+              <Image
+                src="/images/nepn-image-three.jpg"
+                alt="NEPN Operations"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </motion.div>
+
+            {/* Overlay shimmer on hover */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                zIndex: 2,
+                background:
+                  "linear-gradient(135deg, rgba(0,0,254,0.06) 0%, transparent 60%)",
+                pointerEvents: "none",
+              }}
             />
+          </motion.div>
+
+          {/* Floating stat card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{
+              duration: 0.6,
+              delay: 0.7,
+              ease: [0.21, 0.47, 0.32, 0.98],
+            }}
+            animate={{ y: [0, -6, 0] }}
+            style={{
+              position: "absolute",
+              bottom: "12%",
+              left: "-8%",
+              backgroundColor: "#fff",
+              borderRadius: "16px",
+              padding: "16px 20px",
+              boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
+              zIndex: 3,
+              minWidth: "160px",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "11px",
+                color: "rgba(0,0,0,0.4)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                margin: "0 0 4px",
+              }}
+            >
+              Est. Operations
+            </p>
+            <p
+              style={{
+                fontSize: "28px",
+                fontWeight: "800",
+                color: "#0a0a0f",
+                letterSpacing: "-0.04em",
+                margin: 0,
+              }}
+            >
+              20+{" "}
+              <span
+                style={{
+                  fontSize: "13px",
+                  fontWeight: "500",
+                  color: "#0000FE",
+                }}
+              >
+                Years
+              </span>
+            </p>
           </motion.div>
         </motion.div>
       </div>
