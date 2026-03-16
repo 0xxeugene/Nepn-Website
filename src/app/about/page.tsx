@@ -34,10 +34,7 @@ export default function About() {
           className="absolute inset-0 flex items-center justify-start"
           style={{
             paddingLeft: "clamp(1.5rem, 10%, 8rem)",
-            background: `
-        radial-gradient(ellipse at center, transparent 20%, rgba(1,6,26,0.55) 100%),
-        linear-gradient(to bottom, rgba(1,6,26,0.15) 0%, transparent 35%, rgba(1,6,26,0.82) 70%, rgba(1,6,26,0.97) 100%)
-      `,
+            background: "linear-gradient(to right, #000000 0%, #00009854 100%)",
           }}
         >
           <h1
