@@ -4,7 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { FiAward, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
-const rectangle52 = "/images/bg-hero-one.jpg";
+const rectangle52 = "/images/about-header.jpg";
 const rectangle54 = "/images/nepn-image-three.jpg";
 const rectangle55 = "/images/nepn-images-four.jpg";
 const rectangle56 = "/images/sustainability-section.jpg";
@@ -194,14 +194,14 @@ export default function About() {
             className="group aspect-square lg:aspect-auto"
           >
             <Image
-              src={rectangle56}
+              src={rectangle52}
               alt="Exploration and production"
               fill
               className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
             />
             <div
-              className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
-              style={{ backdropFilter: "blur(1px)" }}
+            // className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
+            // style={{ backdropFilter: "blur(1px)" }}
             />
             <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent" />
             <div className="absolute top-6 right-6 h-px w-10 bg-white/30 transition-all duration-500 group-hover:w-20" />
@@ -263,10 +263,10 @@ export default function About() {
               src={rectangle54}
               alt="Crude processing"
               fill
-              className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              // className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
             />
             <div
-              className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
+              // className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
               style={{ backdropFilter: "blur(1px)" }}
             />
             <div className="absolute inset-0 bg-linear-to-r from-black/80 to-transparent" />
@@ -327,14 +327,14 @@ export default function About() {
             className="group aspect-square lg:aspect-auto"
           >
             <Image
-              src={rectangle55}
+              src={rectangle56}
               alt="Crude evacuation network"
               fill
               className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
             />
             <div
-              className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
-              style={{ backdropFilter: "blur(1px)" }}
+            // className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent"
+            // style={{ backdropFilter: "blur(1px)" }}
             />
             <div className="absolute inset-0 bg-linear-to-r from-black/40 via-transparent to-transparent" />
             <div className="absolute top-6 right-6 h-px w-10 bg-white/30 transition-all duration-500 group-hover:w-20" />

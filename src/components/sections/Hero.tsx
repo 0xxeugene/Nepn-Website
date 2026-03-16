@@ -205,8 +205,16 @@ export default function Hero() {
               inset: "-4px",
               backgroundImage: `url('${slide.image}')`,
               backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: "contrast(1.15) saturate(1.2) brightness(0.55)",
+              backgroundPosition: slide.id === 3 ? "right center" : "center",
+              filter:
+                slide.id === 3
+                  ? "contrast(1.05) saturate(1.1) brightness(0.85)"
+                  : "contrast(1.15) saturate(1.2) brightness(0.55)",
+              transform:
+                slide.id === 3
+                  ? "scaleX(-1) perspective(900px) rotateY(8deg)"
+                  : "none",
+              transformOrigin: "center center",
             }}
           />
         </motion.div>

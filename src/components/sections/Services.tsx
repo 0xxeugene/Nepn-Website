@@ -154,7 +154,7 @@ export default function Sustainability() {
       {/* Bottom section */}
       <div
         className="sustain-bottom"
-        style={{ position: "relative", marginTop: "-80px" }}
+        style={{ position: "relative", marginTop: "-120px" }}
       >
         <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
           <Image
@@ -171,7 +171,7 @@ export default function Sustainability() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to bottom, rgba(1,6,26,0.55) 0%, rgba(1,6,26,0.2) 25%, rgba(1,6,26,0.15) 45%, rgba(1,6,26,0.55) 65%, rgba(1,6,26,0.92) 100%)",
+              "linear-gradient(to bottom, rgba(1,6,26,0.75) 0%, rgba(1,6,26,0.45) 25%, rgba(1,6,26,0.35) 45%, rgba(1,6,26,0.7) 65%, rgba(1,6,26,0.97) 100%)",
             zIndex: 1,
             pointerEvents: "none",
           }}
@@ -205,6 +205,7 @@ export default function Sustainability() {
                 color: "#fff",
                 letterSpacing: "-0.03em",
                 lineHeight: 1.1,
+                paddingTop: "48px",
                 marginBottom: "20px",
               }}
             >
