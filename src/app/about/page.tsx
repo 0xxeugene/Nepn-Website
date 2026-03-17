@@ -991,17 +991,17 @@ export default function About() {
         >
           {[
             { n: "01.", text: "Achieve zero flare by 2027" },
-            { n: "04.", text: "Maintain zero environmental incidents record" },
+            { n: "02.", text: "Maintain zero environmental incidents record" },
             {
-              n: "02.",
+              n: "03.",
               text: "Increase production capacity by 50% over the next 5 years",
             },
             {
-              n: "05.",
+              n: "04.",
               text: "Expand renewable energy portfolio to 25% by 2036",
             },
             {
-              n: "03.",
+              n: "05.",
               text: "Sustained investment in community development programs across all operational areas",
             },
           ].map(({ n, text }, i) => (
