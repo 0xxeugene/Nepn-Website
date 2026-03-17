@@ -15,7 +15,6 @@ const slides = [
     label: "Powering Progress",
     heading: ["Powering Progress", "through Exploration"],
     sub: "We explore and develop energy resources responsibly to drive economic growth and support sustainable communities.",
-    accent: "#0000FE",
   },
   {
     id: 2,
@@ -23,7 +22,6 @@ const slides = [
     label: "Excellence in Operations",
     heading: ["Excellence", "in Operations"],
     sub: "Our operations are built on safety, innovation, and efficiency to deliver reliable energy solutions every day.",
-    accent: "#0000FE",
   },
   {
     id: 3,
@@ -31,34 +29,47 @@ const slides = [
     label: "Transform Resources",
     heading: ["Transform Resource", "into Opportunities"],
     sub: "By transforming natural resources into sustainable energy, we create opportunities for industries and future generations.",
-    accent: "#0000FE",
   },
 ];
 
-function SplitText({ text, delay = 0 }: { text: string; delay?: number }) {
+// ─── Per-character reveal — only runs on MOUNT, not on every re-render ───────
+// Wrapped in memo so it never re-renders unless text changes.
+import { memo } from "react";
+
+const SplitText = memo(function SplitText({
+  text,
+  delay = 0,
+}: {
+  text: string;
+  delay?: number;
+}) {
   return (
     <>
       {text.split("").map((char, i) => (
         <motion.span
           key={i}
-          initial={{ opacity: 0, y: 60, rotateX: -40 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          exit={{ opacity: 0, y: -30, rotateX: 20 }}
+          initial={{ opacity: 0, y: 48 }}
+          animate={{ opacity: 1, y: 0 }}
+          // No exit animation — parent handles exit with opacity fade,
+          // avoiding per-char exit which doubles the animation work.
           transition={{
-            duration: 0.6,
-            delay: delay + i * 0.022,
-            ease: [0.21, 0.47, 0.32, 0.98],
+            duration: 0.45,
+            delay: delay + i * 0.018,
+            ease: [0.25, 0.46, 0.45, 0.94],
           }}
-          style={{ display: "inline-block", transformOrigin: "bottom" }}
+          style={{
+            display: "inline-block",
+            // translateY is GPU-composited, no layout
+            willChange: "transform, opacity",
+          }}
         >
           {char === " " ? "\u00A0" : char}
         </motion.span>
       ))}
     </>
   );
-}
+});
 
-// Magnetic button hook
 function MagneticLink({
   href,
   children,
@@ -72,26 +83,20 @@ function MagneticLink({
   const springX = useSpring(x, { stiffness: 300, damping: 20 });
   const springY = useSpring(y, { stiffness: 300, damping: 20 });
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    x.set((e.clientX - cx) * 0.35);
-    y.set((e.clientY - cy) * 0.35);
-  };
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   return (
     <motion.a
       ref={ref}
       href={href}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={(e) => {
+        const rect = ref.current?.getBoundingClientRect();
+        if (!rect) return;
+        x.set((e.clientX - (rect.left + rect.width / 2)) * 0.35);
+        y.set((e.clientY - (rect.top + rect.height / 2)) * 0.35);
+      }}
+      onMouseLeave={() => {
+        x.set(0);
+        y.set(0);
+      }}
       style={{
         x: springX,
         y: springY,
@@ -109,16 +114,16 @@ function MagneticLink({
         cursor: "pointer",
         position: "relative",
         overflow: "hidden",
+        willChange: "transform",
       }}
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      {/* Shimmer sweep on hover */}
       <motion.span
         initial={{ x: "-100%", opacity: 0 }}
         whileHover={{ x: "200%", opacity: 0.25 }}
-        transition={{ duration: 0.55, ease: "easeInOut" }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
         style={{
           position: "absolute",
           inset: 0,
@@ -144,28 +149,22 @@ function MagneticLink({
 export default function Hero() {
   const [current, setCurrent] = useState(0);
   const [animating, setAnimating] = useState(true);
-  const [prev, setPrev] = useState<number | null>(null);
-  const [, setDirection] = useState(1);
 
   useEffect(() => {
     setAnimating(false);
-    const reset = setTimeout(() => setAnimating(true), 50);
-    return () => clearTimeout(reset);
+    const t = setTimeout(() => setAnimating(true), 50);
+    return () => clearTimeout(t);
   }, [current]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setDirection(1);
-      setPrev(current);
       setCurrent((p) => (p + 1) % slides.length);
     }, 7000);
     return () => clearInterval(timer);
-  }, [current]);
+  }, []); // ← no [current] dep — interval never resets
 
   const goTo = (i: number) => {
     if (i === current) return;
-    setDirection(i > current ? 1 : -1);
-    setPrev(current);
     setCurrent(i);
   };
 
@@ -183,59 +182,68 @@ export default function Hero() {
         backgroundColor: "#000",
         display: "flex",
         flexDirection: "column",
-        perspective: "1200px",
       }}
     >
-      {/* ── Background images with wipe + zoom ── */}
-      <AnimatePresence initial={false}>
+      {/* ── Background images ────────────────────────────────────────────────
+          Strategy: all 3 images always in the DOM (no mount/unmount cost).
+          Active slide fades in with opacity only — GPU composited, zero layout.
+          Zoom uses transform: scale() — also GPU only.
+          Previous image fades out simultaneously for a clean crossfade.
+      ─────────────────────────────────────────────────────────────────────── */}
+      {slides.map((s, i) => (
         <motion.div
-          key={slide.id}
-          initial={{ clipPath: "inset(0% 100% 0% 0%)" }}
-          animate={{ clipPath: "inset(0% 0% 0% 0%)" }}
-          exit={{ clipPath: "inset(0% 0% 0% 100%)", zIndex: -1 }}
-          transition={{ clipPath: { duration: 1.1, ease: [0.76, 0, 0.24, 1] } }}
-          style={{ position: "absolute", inset: 0, zIndex: 0 }}
+          key={s.id}
+          animate={{ opacity: i === current ? 1 : 0 }}
+          transition={{ duration: 1.0, ease: "easeInOut" }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            willChange: "opacity",
+          }}
         >
           <motion.div
+            // Only animate scale when this slide is active
+            animate={i === current ? { scale: 1 } : { scale: 1.15 }}
             initial={{ scale: 1.15 }}
-            animate={{ scale: 1 }}
             transition={{ duration: 7, ease: "linear" }}
             style={{
               position: "absolute",
               inset: "-4px",
-              backgroundImage: `url('${slide.image}')`,
+              backgroundImage: `url('${s.image}')`,
               backgroundSize: "cover",
-              backgroundPosition: slide.id === 3 ? "right center" : "center",
+              backgroundPosition: s.id === 3 ? "right center" : "center",
               filter:
-                slide.id === 3
+                s.id === 3
                   ? "contrast(1.05) saturate(1.1) brightness(0.85)"
                   : "contrast(1.15) saturate(1.2) brightness(0.55)",
               transform:
-                slide.id === 3
+                s.id === 3
                   ? "scaleX(-1) perspective(900px) rotateY(8deg)"
-                  : "none",
+                  : undefined,
               transformOrigin: "center center",
+              willChange: "transform",
             }}
           />
         </motion.div>
-      </AnimatePresence>
+      ))}
 
-      {/* ── Noise grain overlay ── */}
+      {/* Noise grain */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           zIndex: 1,
           opacity: 0.04,
+          pointerEvents: "none",
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
           backgroundRepeat: "repeat",
           backgroundSize: "128px",
-          pointerEvents: "none",
           mixBlendMode: "overlay",
         }}
       />
 
-      {/* ── Gradient overlay ── */}
+      {/* Gradient overlay */}
       <div
         style={{
           position: "absolute",
@@ -246,24 +254,6 @@ export default function Hero() {
           pointerEvents: "none",
         }}
       />
-
-      {/* ── Slide counter — top right ── */}
-      <motion.div
-        style={{
-          position: "absolute",
-          top: "clamp(24px, 3vw, 40px)",
-          right: "clamp(24px, 3vw, 48px)",
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          color: "rgba(255,255,255,0.5)",
-          fontSize: "13px",
-          fontWeight: "500",
-          letterSpacing: "0.08em",
-          fontVariantNumeric: "tabular-nums",
-        }}
-      ></motion.div>
 
       {/* ── Main content ── */}
       <div
@@ -293,47 +283,8 @@ export default function Hero() {
           }}
         >
           <div style={{ width: "100%", maxWidth: "800px" }}>
-            {/* Eyebrow label */}
-            {/* <AnimatePresence mode="wait">
-              <motion.div
-                key={slide.id + "-label"}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  marginBottom: "clamp(16px, 2vw, 24px)",
-                }}
-              >
-                <motion.span
-                  animate={{ scaleX: [0, 1] }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  style={{
-                    display: "inline-block",
-                    width: "32px",
-                    height: "2px",
-                    backgroundColor: "#0000FE",
-                    transformOrigin: "left",
-                  }}
-                />
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "rgba(255,255,255,0.6)",
-                    letterSpacing: "0.15em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {slide.label}
-                </span>
-              </motion.div>
-            </AnimatePresence> */}
-
-            {/* Heading — per-character reveal */}
+            {/* Heading — SplitText only re-mounts on slide change via key,
+                exits as a single opacity fade (no per-char exit cost) */}
             <h1
               style={{
                 fontSize: "clamp(36px, 5vw, 64px)",
@@ -341,14 +292,21 @@ export default function Hero() {
                 color: "#fff",
                 lineHeight: 1.0,
                 letterSpacing: "-0.03em",
-                marginBottom: "clamp(12px, 1.5vw, 20px)",
                 margin: "0 0 clamp(12px, 1.5vw, 20px)",
                 perspectiveOrigin: "50% 50%",
                 transformStyle: "preserve-3d",
               }}
             >
               <AnimatePresence mode="wait">
-                <motion.div key={slide.id + "-h"}>
+                <motion.div
+                  key={slide.id + "-h"}
+                  exit={{
+                    opacity: 0,
+                    y: -16,
+                    transition: { duration: 0.25, ease: "easeIn" },
+                  }}
+                  style={{ willChange: "opacity, transform" }}
+                >
                   {slide.heading.map((line, li) => (
                     <div
                       key={li}
@@ -358,34 +316,35 @@ export default function Hero() {
                         lineHeight: 1.12,
                       }}
                     >
-                      <SplitText text={line} delay={li * 0.08} />
+                      <SplitText text={line} delay={li * 0.06} />
                     </div>
                   ))}
                 </motion.div>
               </AnimatePresence>
             </h1>
 
-            {/* Subtext */}
+            {/* Subtext — simple fade, no split chars */}
             <AnimatePresence mode="wait">
               <motion.p
                 key={slide.id + "-sub"}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.6, delay: 0.55, ease: "easeOut" }}
+                exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+                transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
                 style={{
                   fontSize: "clamp(13px, 1.1vw, 16px)",
                   color: "rgba(255,255,255,0.65)",
                   maxWidth: "380px",
                   lineHeight: 1.75,
                   margin: "clamp(16px, 2vw, 24px) 0 clamp(24px, 3vw, 36px)",
+                  willChange: "opacity, transform",
                 }}
               >
                 {slide.sub}
               </motion.p>
             </AnimatePresence>
 
-            {/* CTA */}
+            {/* CTA — only animates once on mount */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -454,6 +413,7 @@ export default function Hero() {
                       backgroundColor: "#0000FE",
                       borderRadius: "2px",
                       transformOrigin: "left",
+                      willChange: "transform",
                     }}
                   />
                 </div>

@@ -374,62 +374,6 @@ export default function AboutSection() {
               }}
             />
           </motion.div>
-
-          {/* Floating stat card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{
-              duration: 0.6,
-              delay: 0.7,
-              ease: [0.21, 0.47, 0.32, 0.98],
-            }}
-            animate={{ y: [0, -6, 0] }}
-            style={{
-              position: "absolute",
-              bottom: "12%",
-              left: "-8%",
-              backgroundColor: "#fff",
-              borderRadius: "16px",
-              padding: "16px 20px",
-              boxShadow: "0 16px 48px rgba(0,0,0,0.12)",
-              zIndex: 3,
-              minWidth: "160px",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "11px",
-                color: "rgba(0,0,0,0.4)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                margin: "0 0 4px",
-              }}
-            >
-              Est. Operations
-            </p>
-            <p
-              style={{
-                fontSize: "28px",
-                fontWeight: "800",
-                color: "#0a0a0f",
-                letterSpacing: "-0.04em",
-                margin: 0,
-              }}
-            >
-              20+{" "}
-              <span
-                style={{
-                  fontSize: "13px",
-                  fontWeight: "500",
-                  color: "#0000FE",
-                }}
-              >
-                Years
-              </span>
-            </p>
-          </motion.div>
         </motion.div>
       </div>
 

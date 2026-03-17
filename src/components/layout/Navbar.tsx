@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function Header() {
+export default function Header({ forceWhite = false }: { forceWhite?: boolean }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolledState, setScrolledState] = useState(false);
+  const scrolled = forceWhite || scrolledState;
   const pathname = usePathname();
 
   const menuItems = [
@@ -26,7 +27,7 @@ export default function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+      setScrolledState(window.scrollY > 40);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
