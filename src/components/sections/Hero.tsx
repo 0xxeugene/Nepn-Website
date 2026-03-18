@@ -44,13 +44,11 @@ const HeadingReveal = memo(function HeadingReveal({
   slideId: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const tlRef = useRef<any>(null);
+  const tlRef = useRef<{ kill(): void } | null>(null);
 
   useEffect(() => {
-    let gsap: any;
     (async () => {
-      const g = await import("gsap");
-      gsap = g.gsap;
+      const { gsap } = await import("gsap");
 
       const el = ref.current;
       if (!el) return;
@@ -229,7 +227,6 @@ function Indicator({
   slide,
   index,
   current,
-  total,
   duration,
   onClick,
 }: {

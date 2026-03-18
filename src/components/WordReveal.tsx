@@ -52,40 +52,36 @@ export function WordReveal({
   const wrapperRef = useRef<HTMLElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const clearTimers = () => {
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-  };
-
-  const show = () => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const words = el.querySelectorAll<HTMLSpanElement>("[data-wi]");
-    words.forEach((w, i) => {
-      const t = setTimeout(
-        () => {
-          w.style.transform = "translateY(0)";
-          w.style.opacity = "1";
-        },
-        delay + i * stagger,
-      );
-      timersRef.current.push(t);
-    });
-  };
-
-  const hide = () => {
-    clearTimers();
-    const el = wrapperRef.current;
-    if (!el) return;
-    el.querySelectorAll<HTMLSpanElement>("[data-wi]").forEach((w) => {
-      w.style.transform = "translateY(108%)";
-      w.style.opacity = "0";
-    });
-  };
-
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
+
+    const clearTimers = () => {
+      timersRef.current.forEach(clearTimeout);
+      timersRef.current = [];
+    };
+
+    const show = () => {
+      const words = el.querySelectorAll<HTMLSpanElement>("[data-wi]");
+      words.forEach((w, i) => {
+        const t = setTimeout(
+          () => {
+            w.style.transform = "translateY(0)";
+            w.style.opacity = "1";
+          },
+          delay + i * stagger,
+        );
+        timersRef.current.push(t);
+      });
+    };
+
+    const hide = () => {
+      clearTimers();
+      el.querySelectorAll<HTMLSpanElement>("[data-wi]").forEach((w) => {
+        w.style.transform = "translateY(108%)";
+        w.style.opacity = "0";
+      });
+    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {

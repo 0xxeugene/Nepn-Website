@@ -191,7 +191,7 @@ export default function Sustainability() {
   const bottomImgInnerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let ctx: any;
+    let ctx: { revert(): void } | undefined;
     (async () => {
       const { gsap } = await import("gsap");
       const { ScrollTrigger } = await import("gsap/ScrollTrigger");
@@ -239,7 +239,9 @@ export default function Sustainability() {
         }
       });
     })();
-    return () => ctx?.revert();
+    return () => {
+      ctx?.revert();
+    };
   }, []);
 
   return (

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { FiAward, FiTarget, FiTrendingUp, FiUsers } from "react-icons/fi";
 const rectangle52 = "/images/about-header.jpg";
 const rectangle54 = "/images/nepn-image-three.jpg";
-const rectangle55 = "/images/nepn-images-four.jpg";
+// const rectangle55 = "/images/nepn-images-four.jpg";
 const rectangle56 = "/images/sustainability-section.jpg";
 const rectangle61 = "/images/sustainability-section.jpg";
 

@@ -11,29 +11,6 @@ import Image from "next/image";
 import { useRef } from "react";
 import { WordReveal } from "../WordReveal";
 
-function SplitText({ text, delay = 0 }: { text: string; delay?: number }) {
-  return (
-    <>
-      {text.split("").map((char, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 50, rotateX: -40 }}
-          whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{
-            duration: 0.55,
-            delay: delay + i * 0.022,
-            ease: [0.21, 0.47, 0.32, 0.98],
-          }}
-          style={{ display: "inline-block", transformOrigin: "bottom" }}
-        >
-          {char === " " ? "\u00A0" : char}
-        </motion.span>
-      ))}
-    </>
-  );
-}
-
 function MagneticLink({
   href,
   children,

@@ -11,26 +11,26 @@ import Image from "next/image";
 import { useRef } from "react";
 import { WordReveal } from "../WordReveal";
 
-// ─── FIX 1: Animate per-line, not per-character ───────────────────────────
-// Per-character splits create 40–60 motion nodes. Animating per-line keeps
-// the DOM lean while preserving the reveal feel.
-function AnimatedLine({ text, delay = 0 }: { text: string; delay?: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-40px" }}
-      transition={{
-        duration: 0.6,
-        delay,
-        ease: [0.21, 0.47, 0.32, 0.98],
-      }}
-      style={{ display: "block", lineHeight: 1.15, willChange: "transform" }}
-    >
-      {text}
-    </motion.div>
-  );
-}
+// // ─── FIX 1: Animate per-line, not per-character ───────────────────────────
+// // Per-character splits create 40–60 motion nodes. Animating per-line keeps
+// // the DOM lean while preserving the reveal feel.
+// function AnimatedLine({ text, delay = 0 }: { text: string; delay?: number }) {
+//   return (
+//     <motion.div
+//       initial={{ opacity: 0, y: 40 }}
+//       whileInView={{ opacity: 1, y: 0 }}
+//       viewport={{ once: true, margin: "-40px" }}
+//       transition={{
+//         duration: 0.6,
+//         delay,
+//         ease: [0.21, 0.47, 0.32, 0.98],
+//       }}
+//       style={{ display: "block", lineHeight: 1.15, willChange: "transform" }}
+//     >
+//       {text}
+//     </motion.div>
+//   );
+// }
 
 // ─── FIX 2: Magnetic button — remove child whileHover animation ───────────
 // The shimmer span was JS-driven on every hover. Replace with a CSS
