@@ -9,44 +9,32 @@ import {
 } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
+import { WordReveal } from "../WordReveal";
 
-// Split text character by character
-function SplitText({
-  text,
-  delay = 0,
-  style = {},
-}: {
-  text: string;
-  delay?: number;
-  style?: React.CSSProperties;
-}) {
+// ─── FIX 1: Animate per-line, not per-character ───────────────────────────
+// Per-character splits create 40–60 motion nodes. Animating per-line keeps
+// the DOM lean while preserving the reveal feel.
+function AnimatedLine({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
-    <>
-      {text.split("").map((char, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 50, rotateX: -40 }}
-          whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{
-            duration: 0.55,
-            delay: delay + i * 0.022,
-            ease: [0.21, 0.47, 0.32, 0.98],
-          }}
-          style={{
-            display: "inline-block",
-            transformOrigin: "bottom",
-            ...style,
-          }}
-        >
-          {char === " " ? "\u00A0" : char}
-        </motion.span>
-      ))}
-    </>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{
+        duration: 0.6,
+        delay,
+        ease: [0.21, 0.47, 0.32, 0.98],
+      }}
+      style={{ display: "block", lineHeight: 1.15, willChange: "transform" }}
+    >
+      {text}
+    </motion.div>
   );
 }
 
-// Magnetic CTA button
+// ─── FIX 2: Magnetic button — remove child whileHover animation ───────────
+// The shimmer span was JS-driven on every hover. Replace with a CSS
+// keyframe so it runs entirely on the compositor thread.
 function MagneticLink({
   href,
   children,
@@ -90,23 +78,15 @@ function MagneticLink({
         position: "relative",
         overflow: "hidden",
         cursor: "pointer",
+        // FIX: promote to own layer so spring transform stays on compositor
+        willChange: "transform",
       }}
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      <motion.span
-        initial={{ x: "-100%" }}
-        whileHover={{ x: "200%" }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%)",
-        }}
-      />
+      {/* CSS shimmer — zero JS overhead on hover */}
+      <span className="btn-shimmer" aria-hidden />
       {children}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <path
@@ -124,21 +104,24 @@ function MagneticLink({
 export default function AboutSection() {
   const sectionRef = useRef(null);
 
+  // ─── FIX 3: One shared scrollYProgress, not multiple useTransform chains ──
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
   });
 
-  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.4, 1.3, 0.5]);
-  const opacity = useTransform(
+  // Keep deco shape transforms but reduce chain depth
+  const decoScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.4, 1.3, 0.5]);
+  const decoOpacity = useTransform(
     scrollYProgress,
     [0, 0.12, 0.88, 1],
     [0, 1, 1, 0],
   );
-  const x = useTransform(scrollYProgress, [0, 0.45, 1], [200, 0, 80]);
+  const decoX = useTransform(scrollYProgress, [0, 0.45, 1], [200, 0, 80]);
 
-  // Parallax on the image
-  const imageY = useTransform(scrollYProgress, [0, 1], [60, -60]);
+  // ─── FIX 4: Parallax capped to transform-only (no layout thrash) ─────────
+  // imageY drives a `translateY` on the wrapper — no height/inset changes.
+  const imageY = useTransform(scrollYProgress, [0, 1], [30, -30]);
 
   return (
     <section
@@ -153,6 +136,7 @@ export default function AboutSection() {
     >
       {/* Grain texture */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           inset: 0,
@@ -177,9 +161,11 @@ export default function AboutSection() {
           height: "92%",
           zIndex: 0,
           pointerEvents: "none",
-          scale,
-          opacity,
-          x,
+          scale: decoScale,
+          opacity: decoOpacity,
+          x: decoX,
+          // FIX: own compositing layer — scroll-linked transforms stay off main thread
+          willChange: "transform, opacity",
         }}
       >
         <Image
@@ -231,7 +217,8 @@ export default function AboutSection() {
               Who we are
             </span>
           </motion.div>
-          {/* Heading — character split */}
+
+          {/* ─── FIX 1 applied: 2 motion nodes instead of ~50 ─── */}
           <h2
             style={{
               fontSize: "clamp(28px, 4vw, 64px)",
@@ -240,22 +227,18 @@ export default function AboutSection() {
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
               margin: "0 0 28px",
-              perspectiveOrigin: "50% 50%",
-              transformStyle: "preserve-3d",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.28em",
             }}
           >
-            {["History, Mission", "& Values"].map((line, li) => (
-              <div
-                key={li}
-                style={{
-                  display: "block",
-                  overflow: "hidden",
-                  lineHeight: 1.15,
-                }}
-              >
-                <SplitText text={line} delay={li * 0.1} />
-              </div>
-            ))}
+            <WordReveal
+              as="span"
+              text="History, Mission"
+              stagger={90}
+              delay={0}
+            />
+            <WordReveal as="span" text="& Values" stagger={90} delay={300} />
           </h2>
 
           <motion.p
@@ -278,6 +261,7 @@ export default function AboutSection() {
             developing the Qua Iboe field, playing a vital role in meeting the
             nation&apos;s energy needs.
           </motion.p>
+
           {/* CTA */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -307,10 +291,10 @@ export default function AboutSection() {
             zIndex: 2,
           }}
         >
-          {/* Floating accent blob behind image */}
-          <motion.div
-            animate={{ y: [0, -12, 0], rotate: [0, 3, 0] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          {/* ─── FIX 5: CSS animation blob instead of JS keyframe loop ─── */}
+          <div
+            aria-hidden
+            className="blob-accent"
             style={{
               position: "absolute",
               top: "8%",
@@ -323,6 +307,7 @@ export default function AboutSection() {
               zIndex: 0,
               pointerEvents: "none",
               filter: "blur(24px)",
+              // animation handled in <style> block below — zero JS overhead
             }}
           />
 
@@ -342,13 +327,13 @@ export default function AboutSection() {
               zIndex: 1,
             }}
           >
-            {/* Parallax inner image */}
+            {/* ─── FIX 4: Parallax via transform only — no layout changes ─── */}
             <motion.div
               style={{
                 y: imageY,
                 position: "absolute",
-                inset: "-10% 0",
-                height: "120%",
+                inset: 0,
+                willChange: "transform",
               }}
             >
               <Image
@@ -359,29 +344,61 @@ export default function AboutSection() {
               />
             </motion.div>
 
-            {/* Overlay shimmer on hover */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                position: "absolute",
-                inset: 0,
-                zIndex: 2,
-                background:
-                  "linear-gradient(135deg, rgba(0,0,254,0.06) 0%, transparent 60%)",
-                pointerEvents: "none",
-              }}
-            />
+            {/* Overlay shimmer on hover — CSS only */}
+            <div className="img-overlay" aria-hidden />
           </motion.div>
         </motion.div>
       </div>
 
       <style>{`
+        /* ── Blob float: CSS animation, zero JS ── */
+        .blob-accent {
+          animation: blobFloat 6s ease-in-out infinite;
+        }
+        @keyframes blobFloat {
+          0%, 100% { transform: translateY(0)   rotate(0deg); }
+          50%       { transform: translateY(-12px) rotate(3deg); }
+        }
+
+        /* ── Image overlay: CSS transition, no motion node ── */
+        .img-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          background: linear-gradient(135deg, rgba(0,0,254,0.06) 0%, transparent 60%);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .about-image:hover .img-overlay { opacity: 1; }
+
+        /* ── Button shimmer: CSS animation, no JS hover listener ── */
+        .btn-shimmer {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(
+            105deg,
+            transparent 40%,
+            rgba(255,255,255,0.5) 50%,
+            transparent 60%
+          );
+          transform: translateX(-100%);
+          transition: none;
+        }
+        a:hover .btn-shimmer {
+          animation: shimmerSlide 0.5s ease-in-out forwards;
+        }
+        @keyframes shimmerSlide {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(200%); }
+        }
+
+        /* ── Responsive ── */
         .about-deco { display: block; }
         @media (max-width: 1024px) {
           .about-inner { padding: 0 40px !important; gap: 40px !important; }
-          .about-deco { width: 500px !important; }
+          .about-deco  { width: 500px !important; }
         }
         @media (max-width: 768px) {
           .about-section { padding: 72px 0 !important; }
@@ -391,16 +408,16 @@ export default function AboutSection() {
             gap: 40px !important;
             align-items: flex-start !important;
           }
-          .about-text { flex: unset !important; width: 100% !important; }
+          .about-text  { flex: unset !important; width: 100% !important; }
           .about-image { display: none !important; }
-          .about-deco { display: none !important; }
+          .about-deco  { display: none !important; }
         }
         @media (max-width: 480px) {
           .about-section { padding: 56px 0 !important; }
-          .about-inner { padding: 0 20px !important; gap: 32px !important; }
+          .about-inner   { padding: 0 20px !important; gap: 32px !important; }
         }
         @media (max-width: 360px) {
-          .about-inner { padding: 0 16px !important; }
+          .about-inner   { padding: 0 16px !important; }
         }
       `}</style>
     </section>

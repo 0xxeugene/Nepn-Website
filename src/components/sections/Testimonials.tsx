@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { WordReveal } from "../WordReveal";
 
 const testimonials = [
   {
@@ -75,25 +76,22 @@ export default function Testimonials() {
         }}
       >
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          style={{ textAlign: "center", marginBottom: "40px" }}
-        >
-          <h2
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <WordReveal
+            as="h2"
+            text="Testimonials"
+            delay={0}
+            stagger={0.09}
             style={{
               fontSize: "clamp(28px, 4vw, 64px)",
               fontWeight: "600",
               color: "#0a0a0f",
               letterSpacing: "-0.03em",
               lineHeight: 1.1,
+              justifyContent: "center",
             }}
-          >
-            Testimonials
-          </h2>
-        </motion.div>
+          />
+        </div>
 
         {/* Cards */}
         <AnimatePresence mode="wait">

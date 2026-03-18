@@ -6,7 +6,7 @@ import {
   useMotionValue,
   useSpring,
 } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 
 const slides = [
   {
@@ -32,44 +32,129 @@ const slides = [
   },
 ];
 
-// ─── Per-character reveal — only runs on MOUNT, not on every re-render ───────
-// Wrapped in memo so it never re-renders unless text changes.
-import { memo } from "react";
-
-const SplitText = memo(function SplitText({
-  text,
-  delay = 0,
+// ─── GSAP word-mask reveal ────────────────────────────────────────────────────
+// Each word slides up from behind an overflow:hidden clip.
+// On exit, words fall down and fade — opposite direction gives depth.
+// This is the "how tf" moment. Pure GSAP, compositor-only.
+const HeadingReveal = memo(function HeadingReveal({
+  lines,
+  slideId,
 }: {
-  text: string;
-  delay?: number;
+  lines: string[];
+  slideId: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const tlRef = useRef<any>(null);
+
+  useEffect(() => {
+    let gsap: any;
+    (async () => {
+      const g = await import("gsap");
+      gsap = g.gsap;
+
+      const el = ref.current;
+      if (!el) return;
+
+      // Kill any running timeline
+      tlRef.current?.kill();
+
+      const words = el.querySelectorAll<HTMLSpanElement>("[data-word]");
+
+      // Set start state instantly (no transition flash)
+      gsap.set(words, { y: "105%", opacity: 0 });
+
+      // Stagger each word up from its mask
+      tlRef.current = gsap.to(words, {
+        y: "0%",
+        opacity: 1,
+        duration: 0.7,
+        ease: "power3.out",
+        stagger: 0.07,
+        delay: 0.05,
+      });
+    })();
+
+    return () => {
+      tlRef.current?.kill();
+    };
+  }, [slideId]); // re-runs only when slide changes
+
   return (
-    <>
-      {text.split("").map((char, i) => (
-        <motion.span
-          key={i}
-          initial={{ opacity: 0, y: 48 }}
-          animate={{ opacity: 1, y: 0 }}
-          // No exit animation — parent handles exit with opacity fade,
-          // avoiding per-char exit which doubles the animation work.
-          transition={{
-            duration: 0.45,
-            delay: delay + i * 0.018,
-            ease: [0.25, 0.46, 0.45, 0.94],
-          }}
+    <div ref={ref}>
+      {lines.map((line, li) => (
+        <div
+          key={li}
           style={{
-            display: "inline-block",
-            // translateY is GPU-composited, no layout
-            willChange: "transform, opacity",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0 0.28em",
+            overflow: "visible",
+            lineHeight: 1.12,
+            // clip words to their line
+            marginBottom: li < lines.length - 1 ? "0.05em" : 0,
           }}
         >
-          {char === " " ? "\u00A0" : char}
-        </motion.span>
+          {line.split(" ").map((word, wi) => (
+            // outer span = the mask
+            <span
+              key={wi}
+              style={{
+                display: "inline-block",
+                overflow: "hidden",
+                verticalAlign: "bottom",
+                padding: "0.04em 0 0.12em",
+                margin: "-0.04em 0 -0.12em",
+              }}
+            >
+              {/* inner span = what GSAP moves */}
+              <span
+                data-word
+                style={{
+                  display: "inline-block",
+                  willChange: "transform, opacity",
+                }}
+              >
+                {word}
+              </span>
+            </span>
+          ))}
+        </div>
       ))}
-    </>
+    </div>
   );
 });
 
+// ─── Sub text with blur-clear entrance ───────────────────────────────────────
+function SubReveal({ text, slideId }: { text: string; slideId: number }) {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.p
+        key={slideId + "-sub"}
+        initial={{ opacity: 0, y: 14, filter: "blur(6px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{
+          opacity: 0,
+          y: -8,
+          filter: "blur(4px)",
+          transition: { duration: 0.2 },
+        }}
+        transition={{ duration: 0.65, delay: 0.55, ease: "easeOut" }}
+        style={{
+          fontSize: "clamp(13px, 1.1vw, 16px)",
+          color: "rgba(255,255,255,0.65)",
+          maxWidth: "380px",
+          lineHeight: 1.75,
+          margin: "clamp(16px, 2vw, 24px) 0 clamp(24px, 3vw, 36px)",
+          willChange: "opacity, transform, filter",
+        }}
+      >
+        {text}
+      </motion.p>
+    </AnimatePresence>
+  );
+}
+
+// ─── Magnetic CTA ─────────────────────────────────────────────────────────────
 function MagneticLink({
   href,
   children,
@@ -120,18 +205,8 @@ function MagneticLink({
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      <motion.span
-        initial={{ x: "-100%", opacity: 0 }}
-        whileHover={{ x: "200%", opacity: 0.25 }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%)",
-          pointerEvents: "none",
-        }}
-      />
+      {/* CSS shimmer — zero JS on hover */}
+      <span className="btn-shimmer" aria-hidden />
       {children}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <path
@@ -146,22 +221,115 @@ function MagneticLink({
   );
 }
 
+// ─── Slide indicator ─────────────────────────────────────────────────────────
+// FIX: Only ONE bar animates (the active one).
+// Completed slides get a static full white bar at low opacity.
+// No more "two light up" bug.
+function Indicator({
+  slide,
+  index,
+  current,
+  total,
+  duration,
+  onClick,
+}: {
+  slide: (typeof slides)[number];
+  index: number;
+  current: number;
+  total: number;
+  duration: number;
+  onClick: () => void;
+}) {
+  const isActive = index === current;
+  const isPast = index < current;
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        background: "none",
+        border: "none",
+        cursor: "pointer",
+        padding: 0,
+        textAlign: "left",
+        minWidth: 0,
+      }}
+    >
+      {/* Track */}
+      <div
+        style={{
+          height: "2px",
+          backgroundColor: "rgba(255,255,255,0.15)",
+          borderRadius: "2px",
+          marginBottom: "clamp(8px, 1vw, 14px)",
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {/* Completed: static full bar, muted */}
+        {isPast && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "rgba(255,255,255,0.4)",
+              borderRadius: "2px",
+            }}
+          />
+        )}
+
+        {/* Active: animating blue bar — key forces remount on slide change
+            so it always restarts from scaleX:0 cleanly */}
+        {isActive && (
+          <motion.div
+            key={`bar-${current}`}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration, ease: "linear" }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "#0000FE",
+              borderRadius: "2px",
+              transformOrigin: "left",
+              willChange: "transform",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Label */}
+      <motion.span
+        animate={{ color: isActive ? "#fff" : "rgba(255,255,255,0.35)" }}
+        transition={{ duration: 0.3 }}
+        style={{
+          display: "block",
+          fontSize: "clamp(10px, 1vw, 13px)",
+          fontWeight: isActive ? "500" : "400",
+          letterSpacing: "0.01em",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {slide.label}
+      </motion.span>
+    </button>
+  );
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────────────
 export default function Hero() {
   const [current, setCurrent] = useState(0);
-  const [animating, setAnimating] = useState(true);
-
-  useEffect(() => {
-    setAnimating(false);
-    const t = setTimeout(() => setAnimating(true), 50);
-    return () => clearTimeout(t);
-  }, [current]);
+  const DURATION = 7; // seconds per slide
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((p) => (p + 1) % slides.length);
-    }, 7000);
+    }, DURATION * 1000);
     return () => clearInterval(timer);
-  }, []); // ← no [current] dep — interval never resets
+  }, []);
 
   const goTo = (i: number) => {
     if (i === current) return;
@@ -184,12 +352,7 @@ export default function Hero() {
         flexDirection: "column",
       }}
     >
-      {/* ── Background images ────────────────────────────────────────────────
-          Strategy: all 3 images always in the DOM (no mount/unmount cost).
-          Active slide fades in with opacity only — GPU composited, zero layout.
-          Zoom uses transform: scale() — also GPU only.
-          Previous image fades out simultaneously for a clean crossfade.
-      ─────────────────────────────────────────────────────────────────────── */}
+      {/* ── Background images — all in DOM, only opacity changes ── */}
       {slides.map((s, i) => (
         <motion.div
           key={s.id}
@@ -203,10 +366,9 @@ export default function Hero() {
           }}
         >
           <motion.div
-            // Only animate scale when this slide is active
             animate={i === current ? { scale: 1 } : { scale: 1.15 }}
             initial={{ scale: 1.15 }}
-            transition={{ duration: 7, ease: "linear" }}
+            transition={{ duration: DURATION, ease: "linear" }}
             style={{
               position: "absolute",
               inset: "-4px",
@@ -230,6 +392,7 @@ export default function Hero() {
 
       {/* Noise grain */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           inset: 0,
@@ -245,6 +408,7 @@ export default function Hero() {
 
       {/* Gradient overlay */}
       <div
+        aria-hidden
         style={{
           position: "absolute",
           inset: 0,
@@ -267,7 +431,6 @@ export default function Hero() {
           minHeight: 0,
         }}
       >
-        {/* Hero text */}
         <div
           className="hero-content"
           style={{
@@ -283,8 +446,7 @@ export default function Hero() {
           }}
         >
           <div style={{ width: "100%", maxWidth: "800px" }}>
-            {/* Heading — SplitText only re-mounts on slide change via key,
-                exits as a single opacity fade (no per-char exit cost) */}
+            {/* ── Heading — GSAP word mask reveal ── */}
             <h1
               style={{
                 fontSize: "clamp(36px, 5vw, 64px)",
@@ -293,58 +455,20 @@ export default function Hero() {
                 lineHeight: 1.0,
                 letterSpacing: "-0.03em",
                 margin: "0 0 clamp(12px, 1.5vw, 20px)",
-                perspectiveOrigin: "50% 50%",
-                transformStyle: "preserve-3d",
               }}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={slide.id + "-h"}
-                  exit={{
-                    opacity: 0,
-                    y: -16,
-                    transition: { duration: 0.25, ease: "easeIn" },
-                  }}
-                  style={{ willChange: "opacity, transform" }}
-                >
-                  {slide.heading.map((line, li) => (
-                    <div
-                      key={li}
-                      style={{
-                        overflow: "hidden",
-                        display: "block",
-                        lineHeight: 1.12,
-                      }}
-                    >
-                      <SplitText text={line} delay={li * 0.06} />
-                    </div>
-                  ))}
-                </motion.div>
-              </AnimatePresence>
+              {/* key on slideId forces full remount → GSAP useEffect re-runs cleanly */}
+              <HeadingReveal
+                key={slide.id}
+                lines={slide.heading}
+                slideId={slide.id}
+              />
             </h1>
 
-            {/* Subtext — simple fade, no split chars */}
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={slide.id + "-sub"}
-                initial={{ opacity: 0, y: 14 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
-                transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-                style={{
-                  fontSize: "clamp(13px, 1.1vw, 16px)",
-                  color: "rgba(255,255,255,0.65)",
-                  maxWidth: "380px",
-                  lineHeight: 1.75,
-                  margin: "clamp(16px, 2vw, 24px) 0 clamp(24px, 3vw, 36px)",
-                  willChange: "opacity, transform",
-                }}
-              >
-                {slide.sub}
-              </motion.p>
-            </AnimatePresence>
+            {/* ── Sub ── */}
+            <SubReveal text={slide.sub} slideId={slide.id} />
 
-            {/* CTA — only animates once on mount */}
+            {/* ── CTA — animates once on mount ── */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -375,72 +499,35 @@ export default function Hero() {
             }}
           >
             {slides.map((s, i) => (
-              <button
+              <Indicator
                 key={s.id}
+                slide={s}
+                index={i}
+                current={current}
+                total={slides.length}
+                duration={DURATION}
                 onClick={() => goTo(i)}
-                style={{
-                  flex: 1,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: 0,
-                  textAlign: "left",
-                  minWidth: 0,
-                }}
-              >
-                <div
-                  style={{
-                    height: "2px",
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                    borderRadius: "2px",
-                    marginBottom: "clamp(8px, 1vw, 14px)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <motion.div
-                    initial={{ scaleX: 0 }}
-                    animate={{
-                      scaleX:
-                        i === current && animating ? 1 : i < current ? 1 : 0,
-                    }}
-                    transition={
-                      i === current && animating
-                        ? { duration: 7, ease: "linear" }
-                        : { duration: 0.01 }
-                    }
-                    style={{
-                      height: "100%",
-                      backgroundColor: "#0000FE",
-                      borderRadius: "2px",
-                      transformOrigin: "left",
-                      willChange: "transform",
-                    }}
-                  />
-                </div>
-                <motion.span
-                  animate={{
-                    color: i === current ? "#fff" : "rgba(255,255,255,0.35)",
-                  }}
-                  transition={{ duration: 0.3 }}
-                  style={{
-                    display: "block",
-                    fontSize: "clamp(10px, 1vw, 13px)",
-                    fontWeight: i === current ? "500" : "400",
-                    letterSpacing: "0.01em",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {s.label}
-                </motion.span>
-              </button>
+              />
             ))}
           </div>
         </div>
       </div>
 
       <style>{`
+        /* CSS shimmer on CTA — zero JS */
+        .btn-shimmer {
+          position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+          transform: translateX(-100%);
+        }
+        a:hover .btn-shimmer {
+          animation: shimmer 0.5s ease-in-out forwards;
+        }
+        @keyframes shimmer {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(200%); }
+        }
+
         @media (max-width: 768px) {
           .hero-content { padding: 72px 24px 16px !important; }
           .hero-indicators-wrap { padding-left: 24px !important; padding-right: 24px !important; }

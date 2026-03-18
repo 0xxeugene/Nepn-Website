@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
+import { WordReveal } from "../WordReveal";
 
 function SplitText({ text, delay = 0 }: { text: string; delay?: number }) {
   return (
@@ -221,23 +222,29 @@ export default function ContactBanner() {
               lineHeight: 1.05,
               letterSpacing: "-0.03em",
               margin: "0 0 16px",
-              transformStyle: "preserve-3d",
             }}
           >
-            {["The Leading", "indigenous", "oil and gas player"].map(
-              (line, li) => (
-                <div
-                  key={li}
-                  style={{
-                    display: "block",
-                    overflow: "hidden",
-                    lineHeight: 1.15,
-                  }}
-                >
-                  <SplitText text={line} delay={li * 0.08} />
-                </div>
-              ),
-            )}
+            <WordReveal
+              as="span"
+              text="The Leading"
+              delay={0}
+              stagger={0.09}
+              style={{ display: "block" }}
+            />
+            <WordReveal
+              as="span"
+              text="indigenous"
+              delay={0.25}
+              stagger={0.09}
+              style={{ display: "block" }}
+            />
+            <WordReveal
+              as="span"
+              text="oil and gas player"
+              delay={0.4}
+              stagger={0.09}
+              style={{ display: "block" }}
+            />
           </h2>
 
           {/* Animated rule */}
