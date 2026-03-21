@@ -491,7 +491,7 @@ export default function Sustainability() {
           line-height: 1; letter-spacing: -0.02em;
           transition: color 0.3s ease;
         }
-        // .pc:hover .pc-badge span { color: var(--pc); }
+        .pc:hover .pc-badge span { color: var(--pc); }
 
         .pc-title {
           font-size: 12px; font-weight: 700; color: #0a0a0f;

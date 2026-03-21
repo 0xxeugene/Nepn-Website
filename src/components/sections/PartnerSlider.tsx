@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRef } from "react";
 
 const partners = [
   { name: "NUPRC", description: "Regulatory", logo: "/images/nuprc.jpg" },
@@ -12,15 +11,7 @@ const partners = [
 ];
 
 export default function PartnersSlider() {
-  const trackRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (dir: "left" | "right") => {
-    if (!trackRef.current) return;
-    trackRef.current.scrollBy({
-      left: dir === "right" ? 160 : -160,
-      behavior: "smooth",
-    });
-  };
+  const showArrows = partners.length > 5;
 
   return (
     <section
@@ -28,7 +19,6 @@ export default function PartnersSlider() {
         backgroundColor: "#fff",
         borderTop: "1px solid #f0f0f0",
         borderBottom: "1px solid #f0f0f0",
-        position: "relative",
         overflow: "hidden",
       }}
     >
@@ -36,89 +26,41 @@ export default function PartnersSlider() {
         style={{
           maxWidth: "1280px",
           margin: "0 auto",
+          padding: "0 48px",
           boxSizing: "border-box",
           display: "flex",
           alignItems: "center",
+          gap: showArrows ? "8px" : "0",
         }}
       >
-        {/* Left Arrow */}
-        <button
-          onClick={() => scroll("left")}
-          aria-label="Scroll left"
-          className="partners-arrow"
-          style={{
-            flexShrink: 0,
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            border: "1px solid #e5e5e5",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 8px",
-            transition: "border-color 0.15s ease, background 0.15s ease",
-            zIndex: 2,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#0000FE";
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "rgba(0,0,254,0.04)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#e5e5e5";
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "#fff";
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M10 3L5 8l5 5"
-              stroke="#111"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
         {/* Track */}
         <div
-          ref={trackRef}
           style={{
             flex: 1,
-            display: "flex",
-            alignItems: "center",
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
+            display: "grid",
+            gridTemplateColumns: `repeat(${partners.length}, 1fr)`,
           }}
         >
           {partners.map((partner, i) => (
             <div
               key={i}
-              className="partner-card"
               style={{
-                flexShrink: 0,
-                height: "88px",
+                height: "96px",
                 display: "flex",
-                flexDirection: "row",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "14px",
-                padding: "0 24px",
                 borderRight:
                   i < partners.length - 1 ? "1px solid #f0f0f0" : "none",
+                padding: "0 20px",
                 boxSizing: "border-box",
               }}
             >
               <div
                 style={{
                   flexShrink: 0,
-                  width: "44px",
-                  height: "44px",
+                  width: "40px",
+                  height: "40px",
                   position: "relative",
                   borderRadius: "8px",
                   overflow: "hidden",
@@ -136,7 +78,6 @@ export default function PartnersSlider() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  justifyContent: "center",
                   gap: "3px",
                   minWidth: 0,
                 }}
@@ -165,69 +106,24 @@ export default function PartnersSlider() {
             </div>
           ))}
         </div>
-
-        {/* Right Arrow */}
-        <button
-          onClick={() => scroll("right")}
-          aria-label="Scroll right"
-          className="partners-arrow"
-          style={{
-            flexShrink: 0,
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            border: "1px solid #e5e5e5",
-            backgroundColor: "#fff",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            margin: "0 8px",
-            transition: "border-color 0.15s ease, background 0.15s ease",
-            zIndex: 2,
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#0000FE";
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "rgba(0,0,254,0.04)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor =
-              "#e5e5e5";
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-              "#fff";
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M6 3l5 5-5 5"
-              stroke="#111"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
       </div>
 
       <style>{`
-        div::-webkit-scrollbar { display: none; }
-
-        .partner-card { width: 20%; }
-
-        @media (max-width: 1024px) {
-          .partner-card { width: 25%; }
-        }
         @media (max-width: 768px) {
-          .partner-card { width: 40%; }
-          .partners-arrow { display: none !important; }
+          .partners-track {
+            display: flex !important;
+            overflow-x: auto !important;
+            scrollbar-width: none;
+          }
+          .partners-track::-webkit-scrollbar { display: none; }
+          .partners-track > div {
+            flex-shrink: 0;
+            width: 44vw;
+            border-right: 1px solid #f0f0f0 !important;
+          }
         }
         @media (max-width: 480px) {
-          .partner-card { width: 56%; }
-        }
-        @media (max-width: 360px) {
-          .partner-card { width: 72%; }
+          .partners-track > div { width: 60vw; }
         }
       `}</style>
     </section>
