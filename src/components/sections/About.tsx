@@ -11,30 +11,7 @@ import Image from "next/image";
 import { useRef } from "react";
 import { WordReveal } from "../WordReveal";
 
-// // ─── FIX 1: Animate per-line, not per-character ───────────────────────────
-// // Per-character splits create 40–60 motion nodes. Animating per-line keeps
-// // the DOM lean while preserving the reveal feel.
-// function AnimatedLine({ text, delay = 0 }: { text: string; delay?: number }) {
-//   return (
-//     <motion.div
-//       initial={{ opacity: 0, y: 40 }}
-//       whileInView={{ opacity: 1, y: 0 }}
-//       viewport={{ once: true, margin: "-40px" }}
-//       transition={{
-//         duration: 0.6,
-//         delay,
-//         ease: [0.21, 0.47, 0.32, 0.98],
-//       }}
-//       style={{ display: "block", lineHeight: 1.15, willChange: "transform" }}
-//     >
-//       {text}
-//     </motion.div>
-//   );
-// }
-
-// ─── FIX 2: Magnetic button — remove child whileHover animation ───────────
-// The shimmer span was JS-driven on every hover. Replace with a CSS
-// keyframe so it runs entirely on the compositor thread.
+// ─── Magnetic CTA button ──────────────────────────────────────────────────────
 function MagneticLink({
   href,
   children,
@@ -78,14 +55,13 @@ function MagneticLink({
         position: "relative",
         overflow: "hidden",
         cursor: "pointer",
-        // FIX: promote to own layer so spring transform stays on compositor
         willChange: "transform",
       }}
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      {/* CSS shimmer — zero JS overhead on hover */}
+      {/* CSS shimmer — zero JS overhead */}
       <span className="btn-shimmer" aria-hidden />
       {children}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -101,16 +77,16 @@ function MagneticLink({
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function AboutSection() {
   const sectionRef = useRef(null);
 
-  // ─── FIX 3: One shared scrollYProgress, not multiple useTransform chains ──
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start end", "end start"],
   });
 
-  // Keep deco shape transforms but reduce chain depth
+  // Decorative shape transforms
   const decoScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.4, 1.3, 0.5]);
   const decoOpacity = useTransform(
     scrollYProgress,
@@ -119,8 +95,7 @@ export default function AboutSection() {
   );
   const decoX = useTransform(scrollYProgress, [0, 0.45, 1], [200, 0, 80]);
 
-  // ─── FIX 4: Parallax capped to transform-only (no layout thrash) ─────────
-  // imageY drives a `translateY` on the wrapper — no height/inset changes.
+  // Parallax — transform only, no layout thrash
   const imageY = useTransform(scrollYProgress, [0, 1], [30, -30]);
 
   return (
@@ -164,7 +139,6 @@ export default function AboutSection() {
           scale: decoScale,
           opacity: decoOpacity,
           x: decoX,
-          // FIX: own compositing layer — scroll-linked transforms stay off main thread
           willChange: "transform, opacity",
         }}
       >
@@ -176,6 +150,7 @@ export default function AboutSection() {
         />
       </motion.div>
 
+      {/* ── Inner layout ── */}
       <div
         className="about-inner"
         style={{
@@ -218,7 +193,7 @@ export default function AboutSection() {
             </span>
           </motion.div>
 
-          {/* ─── FIX 1 applied: 2 motion nodes instead of ~50 ─── */}
+          {/* Heading */}
           <h2
             style={{
               fontSize: "clamp(28px, 4vw, 64px)",
@@ -241,6 +216,7 @@ export default function AboutSection() {
             <WordReveal as="span" text="& Values" stagger={90} delay={300} />
           </h2>
 
+          {/* Body */}
           <motion.p
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -274,7 +250,6 @@ export default function AboutSection() {
         </div>
 
         {/* ── Right: Image ── */}
-        {/* ── Right: Image ── */}
         <motion.div
           initial={{ opacity: 0, x: 60, filter: "blur(12px)" }}
           whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
@@ -286,30 +261,50 @@ export default function AboutSection() {
           }}
           className="about-image"
           style={{
-            flex: "0 0 48%",
+            flex: "0 0 46%",
             minWidth: 0,
             position: "relative",
             zIndex: 2,
           }}
         >
-          {/* blob accent ... */}
+          {/* Blob accent */}
+          <div
+            aria-hidden
+            className="blob-accent"
+            style={{
+              position: "absolute",
+              top: "8%",
+              right: "-5%",
+              width: "55%",
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(0,0,254,0.12) 0%, transparent 70%)",
+              zIndex: 0,
+              pointerEvents: "none",
+              filter: "blur(24px)",
+            }}
+          />
 
-          {/* ── Frame wrapper — sits OUTSIDE overflow:hidden ── */}
+          {/* Frame wrapper — outside overflow:hidden so border is never clipped */}
           <div
             style={{
               position: "relative",
               width: "100%",
-              aspectRatio: "3/4",
+              height: "70vh",
+              maxHeight: "680px",
+              minHeight: "400px",
               borderRadius: "20px",
-              padding: "6px", // ← uniform frame thickness
+              padding: "6px",
               background: "#fff",
               boxShadow:
                 "0 32px 80px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,254,0.08)",
               marginLeft: "auto",
               zIndex: 1,
+              boxSizing: "border-box",
             }}
           >
-            {/* Inner clipping container — no border here */}
+            {/* Inner clipping container */}
             <motion.div
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
@@ -317,26 +312,29 @@ export default function AboutSection() {
                 position: "relative",
                 width: "100%",
                 height: "100%",
-                borderRadius: "14px", // ← slightly less than parent (20 - 6)
+                borderRadius: "14px", // 20 - 6 = 14 keeps corners perfectly concentric
                 overflow: "hidden",
               }}
             >
+              {/* Parallax wrapper */}
               <motion.div
                 style={{
                   y: imageY,
                   position: "absolute",
-                  inset: 0,
+                  inset: "-8% 0", // extra height to prevent empty edges during parallax travel
                   willChange: "transform",
                 }}
               >
                 <Image
-                  src="/images/nepn-image-three.jpg"
+                  src="/images/Rectangle 54.jpg"
                   alt="NEPN Operations"
                   fill
-                  style={{ objectFit: "cover" }}
+                  style={{ objectFit: "cover", objectPosition: "center top" }}
+                  priority
                 />
               </motion.div>
 
+              {/* Hover overlay — CSS only */}
               <div className="img-overlay" aria-hidden />
             </motion.div>
           </div>
@@ -344,16 +342,16 @@ export default function AboutSection() {
       </div>
 
       <style>{`
-        /* ── Blob float: CSS animation, zero JS ── */
+        /* ── Blob float ── */
         .blob-accent {
           animation: blobFloat 6s ease-in-out infinite;
         }
         @keyframes blobFloat {
-          0%, 100% { transform: translateY(0)   rotate(0deg); }
+          0%, 100% { transform: translateY(0) rotate(0deg); }
           50%       { transform: translateY(-12px) rotate(3deg); }
         }
 
-        /* ── Image overlay: CSS transition, no motion node ── */
+        /* ── Image hover overlay ── */
         .img-overlay {
           position: absolute;
           inset: 0;
@@ -365,7 +363,7 @@ export default function AboutSection() {
         }
         .about-image:hover .img-overlay { opacity: 1; }
 
-        /* ── Button shimmer: CSS animation, no JS hover listener ── */
+        /* ── Button shimmer ── */
         .btn-shimmer {
           position: absolute;
           inset: 0;
@@ -389,9 +387,11 @@ export default function AboutSection() {
 
         /* ── Responsive ── */
         .about-deco { display: block; }
+
         @media (max-width: 1024px) {
           .about-inner { padding: 0 40px !important; gap: 40px !important; }
           .about-deco  { width: 500px !important; }
+          .about-image { flex: 0 0 48% !important; }
         }
         @media (max-width: 768px) {
           .about-section { padding: 72px 0 !important; }

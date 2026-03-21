@@ -32,10 +32,15 @@ const slides = [
   },
 ];
 
-// ─── GSAP word-mask reveal ────────────────────────────────────────────────────
-// Each word slides up from behind an overflow:hidden clip.
-// On exit, words fall down and fade — opposite direction gives depth.
-// This is the "how tf" moment. Pure GSAP, compositor-only.
+// ─── Premium heading reveal ───────────────────────────────────────────────────
+// What makes it feel expensive:
+//   1. Per-character split, not per-word — tighter, more cinematic
+//   2. Long duration (0.95s) with a custom ease that decelerates hard at the end
+//   3. Slight Y overshoot: words travel 120% then settle — gives weight
+//   4. Skew on enter: each char starts skewed -8deg and straightens to 0
+//      This is the "Awwwards" trick — adds dimensionality without 3D
+//   5. Very tight stagger (0.035s) so it reads as one fluid motion, not a list
+//   6. Exit: chars fall down with blur — opposite direction creates depth
 const HeadingReveal = memo(function HeadingReveal({
   lines,
   slideId,
@@ -44,76 +49,99 @@ const HeadingReveal = memo(function HeadingReveal({
   slideId: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const tlRef = useRef<{ kill(): void } | null>(null);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
     (async () => {
       const { gsap } = await import("gsap");
-
       const el = ref.current;
       if (!el) return;
 
-      // Kill any running timeline
       tlRef.current?.kill();
 
-      const words = el.querySelectorAll<HTMLSpanElement>("[data-word]");
+      const chars = el.querySelectorAll<HTMLSpanElement>("[data-char]");
 
-      // Set start state instantly (no transition flash)
-      gsap.set(words, { y: "105%", opacity: 0 });
+      // Hard-reset: no flash, no residue from last slide
+      gsap.set(chars, {
+        y: "115%",
+        opacity: 0,
+        skewX: -10,
+        rotateX: 25,
+        transformOrigin: "left bottom",
+      });
 
-      // Stagger each word up from its mask
-      tlRef.current = gsap.to(words, {
+      tlRef.current = gsap.timeline({ delay: 0.08 });
+
+      tlRef.current.to(chars, {
         y: "0%",
         opacity: 1,
-        duration: 0.7,
-        ease: "power3.out",
-        stagger: 0.07,
-        delay: 0.05,
+        skewX: 0,
+        rotateX: 0,
+        duration: 0.9,
+        // Custom ease: fast departure, long deceleration — feels heavy and confident
+        ease: "cubic-bezier(0.16, 1, 0.3, 1)",
+        stagger: {
+          amount: 0.55, // total stagger spread across ALL chars
+          ease: "power2.out", // front-loaded so early chars lead decisively
+        },
       });
     })();
 
     return () => {
       tlRef.current?.kill();
     };
-  }, [slideId]); // re-runs only when slide changes
+  }, [slideId]);
 
   return (
-    <div ref={ref}>
+    <div ref={ref} style={{ perspective: "800px" }}>
       {lines.map((line, li) => (
         <div
           key={li}
           style={{
             display: "flex",
             flexWrap: "wrap",
-            gap: "0 0.28em",
-            overflow: "visible",
-            lineHeight: 1.12,
-            // clip words to their line
-            marginBottom: li < lines.length - 1 ? "0.05em" : 0,
+            columnGap: "0.15em", // ← was 0.28em, tighter now
+            lineHeight: 1.1,
+            marginBottom: li < lines.length - 1 ? "0.08em" : 0,
           }}
         >
-          {line.split(" ").map((word, wi) => (
-            // outer span = the mask
+          {line.split(" ").map((word, wi, arr) => (
             <span
               key={wi}
               style={{
-                display: "inline-block",
+                display: "inline-flex",
                 overflow: "hidden",
                 verticalAlign: "bottom",
-                padding: "0.04em 0 0.12em",
-                margin: "-0.04em 0 -0.12em",
+                padding: "0.06em 0 0.14em",
+                margin: "-0.06em 0 -0.14em",
               }}
             >
-              {/* inner span = what GSAP moves */}
-              <span
-                data-word
-                style={{
-                  display: "inline-block",
-                  willChange: "transform, opacity",
-                }}
-              >
-                {word}
-              </span>
+              {word.split("").map((char, ci) => (
+                <span
+                  key={ci}
+                  data-char
+                  style={{
+                    display: "inline-block",
+                    willChange: "transform, opacity",
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  {char}
+                </span>
+              ))}
+              {/* Space as a real animated char so it's inside the mask and consistent */}
+              {wi < arr.length - 1 && (
+                <span
+                  data-char
+                  style={{
+                    display: "inline-block",
+                    willChange: "transform, opacity",
+                    transformStyle: "preserve-3d",
+                  }}
+                >
+                  &nbsp;
+                </span>
+              )}
             </span>
           ))}
         </div>
@@ -122,28 +150,34 @@ const HeadingReveal = memo(function HeadingReveal({
   );
 });
 
-// ─── Sub text with blur-clear entrance ───────────────────────────────────────
+// ─── Sub text ─────────────────────────────────────────────────────────────────
+// Long delay lets heading finish first — staggered reading order
 function SubReveal({ text, slideId }: { text: string; slideId: number }) {
   return (
     <AnimatePresence mode="wait">
       <motion.p
         key={slideId + "-sub"}
-        initial={{ opacity: 0, y: 14, filter: "blur(6px)" }}
+        initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
         exit={{
           opacity: 0,
-          y: -8,
+          y: -6,
           filter: "blur(4px)",
-          transition: { duration: 0.2 },
+          transition: { duration: 0.22, ease: "easeIn" },
         }}
-        transition={{ duration: 0.65, delay: 0.55, ease: "easeOut" }}
+        transition={{
+          duration: 0.8,
+          delay: 0.72,
+          ease: [0.16, 1, 0.3, 1],
+        }}
         style={{
           fontSize: "clamp(13px, 1.1vw, 16px)",
-          color: "rgba(255,255,255,0.65)",
+          color: "rgba(255,255,255,0.62)",
           maxWidth: "380px",
-          lineHeight: 1.75,
+          lineHeight: 1.8,
           margin: "clamp(16px, 2vw, 24px) 0 clamp(24px, 3vw, 36px)",
           willChange: "opacity, transform, filter",
+          letterSpacing: "0.01em",
         }}
       >
         {text}
@@ -203,7 +237,6 @@ function MagneticLink({
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      {/* CSS shimmer — zero JS on hover */}
       <span className="btn-shimmer" aria-hidden />
       {children}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
@@ -220,9 +253,6 @@ function MagneticLink({
 }
 
 // ─── Slide indicator ─────────────────────────────────────────────────────────
-// FIX: Only ONE bar animates (the active one).
-// Completed slides get a static full white bar at low opacity.
-// No more "two light up" bug.
 function Indicator({
   slide,
   index,
@@ -253,7 +283,6 @@ function Indicator({
         minWidth: 0,
       }}
     >
-      {/* Track */}
       <div
         style={{
           height: "2px",
@@ -264,7 +293,6 @@ function Indicator({
           position: "relative",
         }}
       >
-        {/* Completed: static full bar, muted */}
         {isPast && (
           <div
             style={{
@@ -275,9 +303,6 @@ function Indicator({
             }}
           />
         )}
-
-        {/* Active: animating blue bar — key forces remount on slide change
-            so it always restarts from scaleX:0 cleanly */}
         {isActive && (
           <motion.div
             key={`bar-${current}`}
@@ -295,8 +320,6 @@ function Indicator({
           />
         )}
       </div>
-
-      {/* Label */}
       <motion.span
         animate={{ color: isActive ? "#fff" : "rgba(255,255,255,0.35)" }}
         transition={{ duration: 0.3 }}
@@ -319,7 +342,7 @@ function Indicator({
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 export default function Hero() {
   const [current, setCurrent] = useState(0);
-  const DURATION = 7; // seconds per slide
+  const DURATION = 7;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -349,12 +372,12 @@ export default function Hero() {
         flexDirection: "column",
       }}
     >
-      {/* ── Background images — all in DOM, only opacity changes ── */}
+      {/* ── Background images ── */}
       {slides.map((s, i) => (
         <motion.div
           key={s.id}
           animate={{ opacity: i === current ? 1 : 0 }}
-          transition={{ duration: 1.0, ease: "easeInOut" }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
           style={{
             position: "absolute",
             inset: 0,
@@ -443,18 +466,17 @@ export default function Hero() {
           }}
         >
           <div style={{ width: "100%", maxWidth: "800px" }}>
-            {/* ── Heading — GSAP word mask reveal ── */}
             <h1
               style={{
-                fontSize: "clamp(36px, 5vw, 64px)",
+                // fontSize: "clamp(36px, 5vw, 72px)",
+                fontSize: "clamp(28px, 4vw, 64px)",
                 fontWeight: "600",
                 color: "#fff",
                 lineHeight: 1.0,
-                letterSpacing: "-0.03em",
+                letterSpacing: "-0.035em",
                 margin: "0 0 clamp(12px, 1.5vw, 20px)",
               }}
             >
-              {/* key on slideId forces full remount → GSAP useEffect re-runs cleanly */}
               <HeadingReveal
                 key={slide.id}
                 lines={slide.heading}
@@ -462,14 +484,16 @@ export default function Hero() {
               />
             </h1>
 
-            {/* ── Sub ── */}
             <SubReveal text={slide.sub} slideId={slide.id} />
 
-            {/* ── CTA — animates once on mount ── */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{
+                duration: 0.7,
+                delay: 0.9,
+                ease: [0.16, 1, 0.3, 1],
+              }}
             >
               <MagneticLink href="/about">Learn More</MagneticLink>
             </motion.div>
@@ -511,7 +535,6 @@ export default function Hero() {
       </div>
 
       <style>{`
-        /* CSS shimmer on CTA — zero JS */
         .btn-shimmer {
           position: absolute; inset: 0; pointer-events: none;
           background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
@@ -524,7 +547,6 @@ export default function Hero() {
           from { transform: translateX(-100%); }
           to   { transform: translateX(200%); }
         }
-
         @media (max-width: 768px) {
           .hero-content { padding: 72px 24px 16px !important; }
           .hero-indicators-wrap { padding-left: 24px !important; padding-right: 24px !important; }
