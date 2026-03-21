@@ -6,7 +6,8 @@ import "./globals.css";
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -25,6 +26,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Preload above-the-fold hero image so it starts loading immediately */}
+        <link
+          rel="preload"
+          as="image"
+          href="/images/bg-hero-one.jpg"
+          fetchPriority="high"
+        />
+      </head>
       <body
         className={`${poppins.variable} antialiased`}
         suppressHydrationWarning

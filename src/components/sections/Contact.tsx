@@ -54,23 +54,14 @@ function MagneticLink({
         position: "relative",
         overflow: "hidden",
         cursor: "pointer",
+        willChange: "transform",
       }}
       whileHover={{ scale: 1.06 }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 400, damping: 17 }}
     >
-      <motion.span
-        initial={{ x: "-100%" }}
-        whileHover={{ x: "200%" }}
-        transition={{ duration: 0.5, ease: "easeInOut" }}
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%)",
-        }}
-      />
+      {/* CSS shimmer — zero JS overhead on hover */}
+      <span className="btn-shimmer" aria-hidden />
       {children}
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
         <path
@@ -249,6 +240,18 @@ export default function ContactBanner() {
       />
 
       <style>{`
+        .btn-shimmer {
+          position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.5) 50%, transparent 60%);
+          transform: translateX(-100%);
+        }
+        a:hover .btn-shimmer {
+          animation: shimmer 0.5s ease-in-out forwards;
+        }
+        @keyframes shimmer {
+          from { transform: translateX(-100%); }
+          to   { transform: translateX(200%); }
+        }
         @media (max-width: 1024px) {
           .contact-inner { padding: 0 40px 72px !important; }
           .contact-spacer { width: 180px !important; }

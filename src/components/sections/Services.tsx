@@ -455,25 +455,25 @@ export default function Sustainability() {
           cursor: default;
           position: relative;
           overflow: hidden;
-          will-change: transform, opacity;
+          // will-change: transform, opacity;
         }
 
-        .pc::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: var(--pc);
-          transform: translateY(100%);
-          transition: transform 0.52s cubic-bezier(0.22,1,0.36,1);
-          z-index: 0;
-          border-radius: 12px;
-        }
-        .pc:hover::before { transform: translateY(0); }
+        // .pc::before {
+        //   content: '';
+        //   position: absolute;
+        //   inset: 0;
+        //   background: var(--pc);
+        //   transform: translateY(100%);
+        //   transition: transform 0.52s cubic-bezier(0.22,1,0.36,1);
+        //   z-index: 0;
+        //   border-radius: 12px;
+        // }
+        // .pc:hover::before { transform: translateY(0); }
 
-        .pc:hover {
-          transform: translateY(-5px) scale(1.015) !important;
-          box-shadow: 0 20px 48px rgba(0,0,0,0.12) !important;
-        }
+        // .pc:hover {
+        //   transform: translateY(-5px) scale(1.015) !important;
+        //   box-shadow: 0 20px 48px rgba(0,0,0,0.12) !important;
+        // }
 
         .pc-inner { position: relative; z-index: 1; }
 
@@ -484,14 +484,14 @@ export default function Sustainability() {
           margin-bottom: 16px; flex-shrink: 0;
           transition: background 0.35s ease, transform 0.52s cubic-bezier(0.22,1,0.36,1);
         }
-        .pc:hover .pc-badge { background: #fff; transform: scale(1.15) rotate(-6deg); }
+        // .pc:hover .pc-badge { background: #fff; transform: scale(1.15) rotate(-6deg); }
 
         .pc-badge span {
           color: #fff; font-size: 24px; font-weight: 600;
           line-height: 1; letter-spacing: -0.02em;
           transition: color 0.3s ease;
         }
-        .pc:hover .pc-badge span { color: var(--pc); }
+        // .pc:hover .pc-badge span { color: var(--pc); }
 
         .pc-title {
           font-size: 12px; font-weight: 700; color: #0a0a0f;
@@ -499,13 +499,13 @@ export default function Sustainability() {
           text-transform: uppercase; line-height: 1.3;
           transition: color 0.3s ease;
         }
-        .pc:hover .pc-title { color: #fff; }
+        // .pc:hover .pc-title { color: #fff; }
 
         .pc-desc {
           font-size: 13px; color: #888; line-height: 1.7;
           transition: color 0.3s ease;
         }
-        .pc:hover .pc-desc { color: rgba(255,255,255,0.82); }
+        // .pc:hover .pc-desc { color: rgba(255,255,255,0.82); }
 
         .pc-line {
           position: absolute; bottom: 0; left: 0;
@@ -513,7 +513,7 @@ export default function Sustainability() {
           transition: width 0.4s cubic-bezier(0.22,1,0.36,1) 0.08s;
           z-index: 2;
         }
-        .pc:hover .pc-line { width: 100%; }
+        // .pc:hover .pc-line { width: 100%; }
 
         @media (max-width: 1024px) {
           .sustain-pillars-wrap { padding: 0 40px !important; }

@@ -274,6 +274,7 @@ export default function AboutSection() {
         </div>
 
         {/* ── Right: Image ── */}
+        {/* ── Right: Image ── */}
         <motion.div
           initial={{ opacity: 0, x: 60, filter: "blur(12px)" }}
           whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
@@ -291,62 +292,54 @@ export default function AboutSection() {
             zIndex: 2,
           }}
         >
-          {/* ─── FIX 5: CSS animation blob instead of JS keyframe loop ─── */}
-          <div
-            aria-hidden
-            className="blob-accent"
-            style={{
-              position: "absolute",
-              top: "8%",
-              right: "-5%",
-              width: "55%",
-              aspectRatio: "1",
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(0,0,254,0.12) 0%, transparent 70%)",
-              zIndex: 0,
-              pointerEvents: "none",
-              filter: "blur(24px)",
-              // animation handled in <style> block below — zero JS overhead
-            }}
-          />
+          {/* blob accent ... */}
 
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+          {/* ── Frame wrapper — sits OUTSIDE overflow:hidden ── */}
+          <div
             style={{
               position: "relative",
               width: "100%",
               aspectRatio: "3/4",
               borderRadius: "20px",
-              overflow: "hidden",
+              padding: "6px", // ← uniform frame thickness
+              background: "#fff",
               boxShadow:
                 "0 32px 80px rgba(0,0,0,0.15), 0 8px 24px rgba(0,0,254,0.08)",
-              border: "6px solid #fff",
               marginLeft: "auto",
               zIndex: 1,
             }}
           >
-            {/* ─── FIX 4: Parallax via transform only — no layout changes ─── */}
+            {/* Inner clipping container — no border here */}
             <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
               style={{
-                y: imageY,
-                position: "absolute",
-                inset: 0,
-                willChange: "transform",
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                borderRadius: "14px", // ← slightly less than parent (20 - 6)
+                overflow: "hidden",
               }}
             >
-              <Image
-                src="/images/nepn-image-three.jpg"
-                alt="NEPN Operations"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </motion.div>
+              <motion.div
+                style={{
+                  y: imageY,
+                  position: "absolute",
+                  inset: 0,
+                  willChange: "transform",
+                }}
+              >
+                <Image
+                  src="/images/nepn-image-three.jpg"
+                  alt="NEPN Operations"
+                  fill
+                  style={{ objectFit: "cover" }}
+                />
+              </motion.div>
 
-            {/* Overlay shimmer on hover — CSS only */}
-            <div className="img-overlay" aria-hidden />
-          </motion.div>
+              <div className="img-overlay" aria-hidden />
+            </motion.div>
+          </div>
         </motion.div>
       </div>
 

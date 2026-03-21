@@ -25,7 +25,7 @@ const slides = [
   },
   {
     id: 3,
-    image: "/images/bg-hero-three.png",
+    image: "/images/bg-hero-three.jpg",
     label: "Transform Resources",
     heading: ["Transform Resource", "into Opportunities"],
     sub: "By transforming natural resources into sustainable energy, we create opportunities for industries and future generations.",

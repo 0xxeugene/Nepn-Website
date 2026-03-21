@@ -2,13 +2,18 @@ import Footer from "@/components/layout/Footer";
 import Navbar from "@/components/layout/Navbar";
 import AboutSection from "@/components/sections/About";
 import Contact from "@/components/sections/Contact";
-import CounterSection from "@/components/sections/Counter";
-import FAQ from "@/components/sections/Faq";
 import Hero from "@/components/sections/Hero";
-import NewsSection from "@/components/sections/NewsSection";
 import PartnersSlider from "@/components/sections/PartnerSlider";
 import SustainabilitySection from "@/components/sections/Services";
-import Testimonials from "@/components/sections/Testimonials";
+import dynamic from "next/dynamic";
+
+// Lazy-load below-the-fold sections to reduce initial bundle and improve LCP
+const Testimonials = dynamic(
+  () => import("@/components/sections/Testimonials"),
+);
+const FAQ = dynamic(() => import("@/components/sections/Faq"));
+const CounterSection = dynamic(() => import("@/components/sections/Counter"));
+const NewsSection = dynamic(() => import("@/components/sections/NewsSection"));
 
 export default function Home() {
   const publishedNews = [
