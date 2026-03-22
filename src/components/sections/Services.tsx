@@ -135,58 +135,208 @@ function PillarCard({
   p: (typeof pillars)[number];
   index: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const letterRef = useRef<HTMLSpanElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const descRef = useRef<HTMLParagraphElement>(null);
+  const shimmerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const card = cardRef.current;
+    if (!card) return;
+
+    // Staggered entrance sequence
+    const baseDelay = index * 180;
 
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
         obs.disconnect();
+
+        // 1. Card fades + rises with slight rotation
         setTimeout(() => {
-          el.style.transition =
-            "transform 0.65s cubic-bezier(0.22,1,0.36,1), opacity 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.3s ease";
-          void el.offsetHeight;
-          el.style.opacity = "1";
-          el.style.transform = "translateY(0) scale(1)";
-        }, index * 150);
+          card.style.transition =
+            "transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1)";
+          card.style.opacity = "1";
+          card.style.transform = "translateY(0) rotateX(0deg)";
+        }, baseDelay);
+
+        // 2. Glow pulse behind badge
+        setTimeout(() => {
+          const glow = glowRef.current;
+          if (!glow) return;
+          glow.style.transition =
+            "opacity 0.5s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1)";
+          glow.style.opacity = "1";
+          glow.style.transform = "scale(1)";
+        }, baseDelay + 200);
+
+        // 3. Badge drops in with spring overshoot
+        setTimeout(() => {
+          const badge = badgeRef.current;
+          if (!badge) return;
+          badge.style.transition =
+            "transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease";
+          badge.style.opacity = "1";
+          badge.style.transform = "translateY(0) scale(1)";
+        }, baseDelay + 280);
+
+        // 4. Letter counter animates (counts up to letter index)
+        setTimeout(() => {
+          const span = letterRef.current;
+          if (!span) return;
+          span.style.transition =
+            "opacity 0.3s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)";
+          span.style.opacity = "1";
+          span.style.transform = "scale(1) rotate(0deg)";
+        }, baseDelay + 420);
+
+        // 5. Title slices in from left
+        setTimeout(() => {
+          const title = titleRef.current;
+          if (!title) return;
+          title.style.transition =
+            "transform 0.6s cubic-bezier(0.16,1,0.3,1), opacity 0.5s ease, letter-spacing 0.6s ease";
+          title.style.opacity = "1";
+          title.style.transform = "translateX(0)";
+          title.style.letterSpacing = "0.04em";
+        }, baseDelay + 500);
+
+        // 6. Desc fades up softly
+        setTimeout(() => {
+          const desc = descRef.current;
+          if (!desc) return;
+          desc.style.transition =
+            "transform 0.7s cubic-bezier(0.16,1,0.3,1), opacity 0.6s ease";
+          desc.style.opacity = "1";
+          desc.style.transform = "translateY(0)";
+        }, baseDelay + 620);
+
+        // 7. Shimmer sweep across card
+        setTimeout(() => {
+          const shimmer = shimmerRef.current;
+          if (!shimmer) return;
+          shimmer.style.transition =
+            "transform 0.85s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease";
+          shimmer.style.transform = "translateX(400px) skewX(-12deg)";
+          shimmer.style.opacity = "0";
+          setTimeout(() => {
+            shimmer.style.transition = "none";
+            shimmer.style.transform = "translateX(-120px) skewX(-12deg)";
+            shimmer.style.opacity = "0.6";
+          }, 900);
+        }, baseDelay + 700);
       },
-      { threshold: 0, rootMargin: "0px 0px -60px 0px" },
+      { threshold: 0, rootMargin: "0px 0px -40px 0px" },
     );
 
-    obs.observe(el);
+    obs.observe(card);
     return () => obs.disconnect();
   }, [index]);
 
   return (
     <div
-      ref={ref}
+      ref={cardRef}
       className="pc"
       style={
         {
           "--pc": p.bg,
           opacity: 0,
-          transform: "translateY(36px) scale(0.97)",
+          transform: "translateY(48px) rotateX(8deg)",
+          transformOrigin: "top center",
         } as React.CSSProperties
       }
     >
+      {/* Shimmer sweep */}
+      <div
+        ref={shimmerRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "80px",
+          height: "100%",
+          background:
+            "linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
+          transform: "translateX(-120px) skewX(-12deg)",
+          opacity: 0.6,
+          zIndex: 3,
+          pointerEvents: "none",
+          borderRadius: "12px",
+        }}
+      />
+
+      {/* Glow behind badge */}
+      <div
+        ref={glowRef}
+        style={{
+          position: "absolute",
+          top: "18px",
+          left: "18px",
+          width: "68px",
+          height: "68px",
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${p.bg}55 0%, transparent 70%)`,
+          filter: "blur(8px)",
+          opacity: 0,
+          transform: "scale(0.4)",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
       <div className="pc-inner">
-        <div className="pc-badge">
-          <span>{p.letter}</span>
+        <div
+          ref={badgeRef}
+          className="pc-badge"
+          style={{
+            opacity: 0,
+            transform: "translateY(-20px) scale(0.7)",
+          }}
+        >
+          <span
+            ref={letterRef}
+            style={{
+              opacity: 0,
+              transform: "scale(0.5) rotate(-15deg)",
+              display: "inline-block",
+            }}
+          >
+            {p.letter}
+          </span>
         </div>
-        <h4 className="pc-title">{p.title}</h4>
-        <p className="pc-desc">{p.desc}</p>
+
+        <h4
+          ref={titleRef}
+          className="pc-title"
+          style={{
+            opacity: 0,
+            transform: "translateX(-16px)",
+            letterSpacing: "0.12em",
+          }}
+        >
+          {p.title}
+        </h4>
+
+        <p
+          ref={descRef}
+          className="pc-desc"
+          style={{
+            opacity: 0,
+            transform: "translateY(12px)",
+          }}
+        >
+          {p.desc}
+        </p>
       </div>
-      {/* <div className="pc-line" /> */}
     </div>
   );
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Sustainability() {
-  // refs for parallax targets only — nothing else changes
   const topImgInnerRef = useRef<HTMLDivElement>(null);
   const bottomImgInnerRef = useRef<HTMLDivElement>(null);
 
@@ -198,9 +348,6 @@ export default function Sustainability() {
       gsap.registerPlugin(ScrollTrigger);
 
       ctx = gsap.context(() => {
-        // ── TOP IMAGE — classic window parallax ───────────────────────────
-        // Image starts slightly up, drifts down as user scrolls past.
-        // overflow:hidden on parent clips the extra height.
         if (topImgInnerRef.current) {
           gsap.fromTo(
             topImgInnerRef.current,
@@ -218,9 +365,6 @@ export default function Sustainability() {
           );
         }
 
-        // ── BOTTOM IMAGE — deeper, faster parallax ────────────────────────
-        // Moves at a greater distance for more drama.
-        // The tall gradient overlay hides the edges so it never looks empty.
         if (bottomImgInnerRef.current) {
           gsap.fromTo(
             bottomImgInnerRef.current,
@@ -252,22 +396,21 @@ export default function Sustainability() {
         overflow: "hidden",
       }}
     >
-      {/* Top image — overflow hidden clips parallax travel */}
+      {/* Top image */}
       <div
         className="sustain-top-img"
         style={{
           position: "relative",
           width: "100%",
           height: "260px",
-          overflow: "hidden", // ← clips the ±10% travel
+          overflow: "hidden",
         }}
       >
-        {/* Inner wrapper — GSAP moves this, not the container */}
         <div
           ref={topImgInnerRef}
           style={{
             position: "absolute",
-            inset: "-12% 0", // extra height so edges stay filled during travel
+            inset: "-12% 0",
             willChange: "transform",
           }}
         >
@@ -288,7 +431,7 @@ export default function Sustainability() {
         />
       </div>
 
-      {/* Pillars card — untouched */}
+      {/* Pillars */}
       <div
         className="sustain-pillars-wrap"
         style={{
@@ -320,21 +463,19 @@ export default function Sustainability() {
         className="sustain-bottom"
         style={{ position: "relative", marginTop: "-120px" }}
       >
-        {/* Background — overflow hidden clips parallax travel */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             zIndex: 0,
-            overflow: "hidden", // ← clips the ±15% travel
+            overflow: "hidden",
           }}
         >
-          {/* Inner wrapper — GSAP moves this */}
           <div
             ref={bottomImgInnerRef}
             style={{
               position: "absolute",
-              inset: "-18% 0", // extra height so edges stay filled
+              inset: "-18% 0",
               willChange: "transform",
             }}
           >
@@ -450,70 +591,87 @@ export default function Sustainability() {
           padding: 28px 24px;
           background: #fff;
           border-radius: 12px;
-          border: 1px solid #f0f0f0;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+          border: 1px solid #ececec;
+          box-shadow:
+            0 2px 4px rgba(0,0,0,0.03),
+            0 8px 24px rgba(0,0,0,0.05),
+            0 0 0 0px transparent;
           cursor: default;
           position: relative;
           overflow: hidden;
-          // will-change: transform, opacity;
+          perspective: 800px;
         }
 
-        // .pc::before {
-        //   content: '';
-        //   position: absolute;
-        //   inset: 0;
-        //   background: var(--pc);
-        //   transform: translateY(100%);
-        //   transition: transform 0.52s cubic-bezier(0.22,1,0.36,1);
-        //   z-index: 0;
-        //   border-radius: 12px;
-        // }
-        // .pc:hover::before { transform: translateY(0); }
-
-        // .pc:hover {
-        //   transform: translateY(-5px) scale(1.015) !important;
-        //   box-shadow: 0 20px 48px rgba(0,0,0,0.12) !important;
-        // }
-
-        .pc-inner { position: relative; z-index: 1; }
+        .pc-inner {
+          position: relative;
+          z-index: 1;
+        }
 
         .pc-badge {
-          width: 52px; height: 52px; border-radius: 50%;
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
           background: var(--pc);
-          display: flex; align-items: center; justify-content: center;
-          margin-bottom: 16px; flex-shrink: 0;
-          transition: background 0.35s ease, transform 0.52s cubic-bezier(0.22,1,0.36,1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+          flex-shrink: 0;
+          position: relative;
+          z-index: 1;
+          box-shadow:
+            0 4px 12px color-mix(in srgb, var(--pc) 35%, transparent),
+            0 1px 3px rgba(0,0,0,0.12);
         }
-        // .pc:hover .pc-badge { background: #fff; transform: scale(1.15) rotate(-6deg); }
 
         .pc-badge span {
-          color: #fff; font-size: 24px; font-weight: 600;
-          line-height: 1; letter-spacing: -0.02em;
-          transition: color 0.3s ease;
+          color: #fff;
+          font-size: 24px;
+          font-weight: 600;
+          line-height: 1;
+          letter-spacing: -0.02em;
+          display: inline-block;
         }
-        .pc:hover .pc-badge span { color: var(--pc); }
 
         .pc-title {
-          font-size: 12px; font-weight: 700; color: #0a0a0f;
-          letter-spacing: 0.04em; margin-bottom: 10px;
-          text-transform: uppercase; line-height: 1.3;
-          transition: color 0.3s ease;
+          font-size: 12px;
+          font-weight: 700;
+          color: #0a0a0f;
+          letter-spacing: 0.04em;
+          margin-bottom: 10px;
+          text-transform: uppercase;
+          line-height: 1.3;
         }
-        // .pc:hover .pc-title { color: #fff; }
 
         .pc-desc {
-          font-size: 13px; color: #888; line-height: 1.7;
-          transition: color 0.3s ease;
+          font-size: 13px;
+          color: #888;
+          line-height: 1.7;
         }
-        // .pc:hover .pc-desc { color: rgba(255,255,255,0.82); }
 
-        .pc-line {
-          position: absolute; bottom: 0; left: 0;
-          height: 3px; width: 0; background: #fff;
-          transition: width 0.4s cubic-bezier(0.22,1,0.36,1) 0.08s;
+        /* Bottom accent line draws in on entrance */
+        .pc-accent-line {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          height: 2px;
+          width: 0%;
+          background: linear-gradient(90deg, var(--pc), color-mix(in srgb, var(--pc) 40%, transparent));
+          border-radius: 0 0 12px 12px;
+          animation: drawLine 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation-play-state: paused;
           z-index: 2;
         }
-        // .pc:hover .pc-line { width: 100%; }
+
+        .pc[style*="opacity: 1"] .pc-accent-line,
+        .pc[style*="opacity:1"] .pc-accent-line {
+          animation-play-state: running;
+        }
+
+        @keyframes drawLine {
+          from { width: 0%; opacity: 0; }
+          to   { width: 100%; opacity: 1; }
+        }
 
         @media (max-width: 1024px) {
           .sustain-pillars-wrap { padding: 0 40px !important; }
